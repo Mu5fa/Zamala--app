@@ -5,8 +5,9 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { User } from 'lucide-react';
+import { User, Star } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { processImage } from '../utils/imageProcessor';
 
 const SUBJECTS = ['احياء', 'رياضيات', 'لغة عربية', 'لغة انجليزية', 'حاسوب', 'كيمياء', 'فيزياء'] as const;
 
@@ -113,22 +114,21 @@ export default function Home() {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Check file size (max 5MB)
-      const maxSize = 5 * 1024 * 1024;
-      if (file.size > maxSize) {
-        toast({
-          title: "خطأ",
-          description: "حجم الصورة كبير جداً. الحد الأقصى 5 ميجابايت",
-          variant: "destructive",
-        });
-        return;
-      }
-      
       setImageFile(file);
       const reader = new FileReader();
-      reader.onload = (event) => {
+      reader.onload = async (event) => {
         const result = event.target?.result as string;
-        setImagePreview(result);
+        try {
+          const processed = await processImage(result);
+          setImagePreview(processed);
+        } catch (error) {
+          toast({
+            title: "خطأ",
+            description: "فشل معالجة الصورة",
+            variant: "destructive",
+          });
+          setImagePreview(result);
+        }
       };
       reader.onerror = () => {
         toast({

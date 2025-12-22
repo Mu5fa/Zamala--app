@@ -79,6 +79,68 @@ export async function registerRoutes(
     res.json(user);
   });
 
+  // Tags Routes
+  app.get('/api/tags', async (req, res) => {
+    const allTags = await storage.getAllTags();
+    res.json(allTags);
+  });
+
+  // Favorites Routes
+  app.post('/api/favorites/:questionId', async (req, res) => {
+    if (!(req.session as any).userId) {
+      return res.status(401).json({ message: "يجب تسجيل الدخول أولاً" });
+    }
+    const success = await storage.addFavorite((req.session as any).userId, Number(req.params.questionId));
+    if (success) {
+      res.json({ message: "تم إضافة للمفضلة" });
+    } else {
+      res.status(400).json({ message: "موجود بالفعل في المفضلة" });
+    }
+  });
+
+  app.delete('/api/favorites/:questionId', async (req, res) => {
+    if (!(req.session as any).userId) {
+      return res.status(401).json({ message: "يجب تسجيل الدخول أولاً" });
+    }
+    await storage.removeFavorite((req.session as any).userId, Number(req.params.questionId));
+    res.json({ message: "تم الحذف من المفضلة" });
+  });
+
+  app.get('/api/favorites/check/:questionId', async (req, res) => {
+    if (!(req.session as any).userId) {
+      return res.json({ isFavorited: false });
+    }
+    const isFavorited = await storage.isFavorited((req.session as any).userId, Number(req.params.questionId));
+    res.json({ isFavorited });
+  });
+
+  app.get('/api/my-favorites', async (req, res) => {
+    if (!(req.session as any).userId) {
+      return res.status(401).json({ message: "يجب تسجيل الدخول أولاً" });
+    }
+    const favorites = await storage.getUserFavorites((req.session as any).userId);
+    res.json(favorites);
+  });
+
+  // Comments Routes
+  app.get('/api/comments/:questionId', async (req, res) => {
+    const answerId = req.query.answerId ? Number(req.query.answerId) : undefined;
+    const questionComments = await storage.getComments(Number(req.params.questionId), answerId);
+    res.json(questionComments);
+  });
+
+  app.post('/api/comments/:questionId', async (req, res) => {
+    if (!(req.session as any).userId) {
+      return res.status(401).json({ message: "يجب تسجيل الدخول أولاً" });
+    }
+    const { content, answerId } = req.body;
+    if (!content || content.trim().length === 0) {
+      return res.status(400).json({ message: "التعليق مطلوب" });
+    }
+    const comment = await storage.createComment(Number(req.params.questionId), (req.session as any).userId, content, answerId);
+    res.json(comment);
+  });
+
   // Questions Routes
   app.get(api.questions.list.path, async (req, res) => {
     const subject = req.query.subject ? String(req.query.subject) : undefined;

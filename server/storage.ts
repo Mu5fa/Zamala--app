@@ -1,11 +1,11 @@
-import { questions, answers, users, answerRatings, questionReports, answerReports, type Question, type InsertQuestion, type Answer, type InsertAnswer, type User, type QuestionReport, type InsertQuestionReport, type AnswerReport, type InsertAnswerReport } from "@shared/schema";
+import { questions, answers, users, answerRatings, questionReports, answerReports, tags, questionTags, favorites, comments, type Question, type InsertQuestion, type Answer, type InsertAnswer, type User, type QuestionReport, type InsertQuestionReport, type AnswerReport, type InsertAnswerReport, type Tag } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, sql, and } from "drizzle-orm";
+import { eq, desc, sql, and, like, inArray } from "drizzle-orm";
 
 export interface IStorage {
-  getQuestions(subject?: string): Promise<(Question & { username: string; grade: string })[]>;
-  getQuestion(id: number): Promise<(Question & { username: string; grade: string }) | undefined>;
-  createQuestion(question: InsertQuestion, userId: number): Promise<Question>;
+  getQuestions(subject?: string, tags?: string[], sortBy?: 'newest' | 'popular'): Promise<(Question & { username: string; grade: string; tags: Tag[] })[]>;
+  getQuestion(id: number): Promise<(Question & { username: string; grade: string; tags: Tag[] }) | undefined>;
+  createQuestion(question: InsertQuestion, userId: number, tags?: string[]): Promise<Question>;
   
   getAnswers(questionId: number): Promise<(Answer & { username: string; grade: string })[]>;
   createAnswer(answer: InsertAnswer, questionId: number, userId: number): Promise<Answer>;
@@ -16,6 +16,12 @@ export interface IStorage {
   getTotalUsersCount(): Promise<number>;
   getUserByUsername(username: string): Promise<User | undefined>;
   
+  getAllTags(): Promise<Tag[]>;
+  addFavorite(userId: number, questionId: number): Promise<boolean>;
+  removeFavorite(userId: number, questionId: number): Promise<boolean>;
+  isFavorited(userId: number, questionId: number): Promise<boolean>;
+  getUserFavorites(userId: number): Promise<Question[]>;
+  
   reportQuestion(questionId: number, userId: number, reason: string): Promise<QuestionReport>;
   reportAnswer(answerId: number, userId: number, reason: string): Promise<AnswerReport>;
   getReports(): Promise<any[]>;
@@ -24,10 +30,13 @@ export interface IStorage {
   deleteAnswer(answerId: number): Promise<void>;
   getAllUsers(): Promise<User[]>;
   deleteUser(userId: number): Promise<void>;
+  
+  getComments(questionId: number, answerId?: number): Promise<any[]>;
+  createComment(questionId: number, userId: number, content: string, answerId?: number): Promise<any>;
 }
 
 export class DatabaseStorage implements IStorage {
-  async getQuestions(subject?: string): Promise<(Question & { username: string; grade: string })[]> {
+  async getQuestions(subject?: string, tagNames?: string[], sortBy: 'newest' | 'popular' = 'newest'): Promise<(Question & { username: string; grade: string; tags: Tag[] })[]> {
     let query = db.select({
       ...questions,
       username: users.username,
@@ -38,23 +47,64 @@ export class DatabaseStorage implements IStorage {
       query = query.where(eq(questions.subject, subject));
     }
     
-    return query.orderBy(desc(questions.createdAt));
+    if (tagNames && tagNames.length > 0) {
+      const tagResults = await db.select({ tagId: tags.id }).from(tags).where(inArray(tags.name, tagNames));
+      const tagIds = tagResults.map(t => t.tagId);
+      const questionIds = await db.select({ questionId: questionTags.questionId }).from(questionTags).where(inArray(questionTags.tagId, tagIds));
+      const qIds = questionIds.map(q => q.questionId);
+      query = query.where(inArray(questions.id, qIds));
+    }
+    
+    const orderBy = sortBy === 'popular' ? desc(questions.id) : desc(questions.createdAt);
+    const result = await query.orderBy(orderBy);
+    
+    // Add tags to each question
+    for (const q of result) {
+      const qTags = await db.select({ name: tags.name, id: tags.id }).from(questionTags)
+        .innerJoin(tags, eq(questionTags.tagId, tags.id))
+        .where(eq(questionTags.questionId, q.id));
+      (q as any).tags = qTags.map(t => ({ id: t.id, name: t.name } as Tag));
+    }
+    
+    return result as (Question & { username: string; grade: string; tags: Tag[] })[];
   }
 
-  async getQuestion(id: number): Promise<(Question & { username: string; grade: string }) | undefined> {
+  async getQuestion(id: number): Promise<(Question & { username: string; grade: string; tags: Tag[] }) | undefined> {
     const [question] = await db.select({
       ...questions,
       username: users.username,
       grade: users.grade,
     }).from(questions).innerJoin(users, eq(questions.userId, users.id)).where(eq(questions.id, id));
-    return question;
+    
+    if (!question) return undefined;
+    
+    const qTags = await db.select({ name: tags.name, id: tags.id }).from(questionTags)
+      .innerJoin(tags, eq(questionTags.tagId, tags.id))
+      .where(eq(questionTags.questionId, id));
+    
+    return {
+      ...question,
+      tags: qTags.map(t => ({ id: t.id, name: t.name } as Tag))
+    };
   }
 
-  async createQuestion(insertQuestion: InsertQuestion, userId: number): Promise<Question> {
+  async createQuestion(insertQuestion: InsertQuestion, userId: number, tagNames?: string[]): Promise<Question> {
     const [question] = await db.insert(questions).values({
       ...insertQuestion,
       userId
     }).returning();
+    
+    if (tagNames && tagNames.length > 0) {
+      for (const tagName of tagNames) {
+        const [tag] = await db.select({ id: tags.id }).from(tags).where(eq(tags.name, tagName));
+        if (tag) {
+          await db.insert(questionTags).values({ questionId: question.id, tagId: tag.id }).onConflictDoNothing();
+        } else {
+          const [newTag] = await db.insert(tags).values({ name: tagName }).returning();
+          await db.insert(questionTags).values({ questionId: question.id, tagId: newTag.id });
+        }
+      }
+    }
     
     await db.update(users).set({
       questionsAsked: sql`${users.questionsAsked} + 1`
@@ -243,11 +293,62 @@ export class DatabaseStorage implements IStorage {
       }
       await db.delete(answers).where(eq(answers.questionId, question.id));
       await db.delete(questionReports).where(eq(questionReports.questionId, question.id));
+      await db.delete(questionTags).where(eq(questionTags.questionId, question.id));
     }
     await db.delete(questions).where(eq(questions.userId, userId));
+    await db.delete(favorites).where(eq(favorites.userId, userId));
 
     // Delete the user
     await db.delete(users).where(eq(users.id, userId));
+  }
+
+  async getAllTags(): Promise<Tag[]> {
+    return await db.select().from(tags).orderBy(desc(tags.createdAt));
+  }
+
+  async addFavorite(userId: number, questionId: number): Promise<boolean> {
+    try {
+      await db.insert(favorites).values({ userId, questionId });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async removeFavorite(userId: number, questionId: number): Promise<boolean> {
+    const result = await db.delete(favorites).where(and(eq(favorites.userId, userId), eq(favorites.questionId, questionId)));
+    return true;
+  }
+
+  async isFavorited(userId: number, questionId: number): Promise<boolean> {
+    const [fav] = await db.select().from(favorites).where(and(eq(favorites.userId, userId), eq(favorites.questionId, questionId)));
+    return !!fav;
+  }
+
+  async getUserFavorites(userId: number): Promise<Question[]> {
+    return await db.select({ ...questions }).from(favorites)
+      .innerJoin(questions, eq(favorites.questionId, questions.id))
+      .where(eq(favorites.userId, userId))
+      .then(results => results.map(r => r.questions));
+  }
+
+  async getComments(questionId: number, answerId?: number): Promise<any[]> {
+    let query = db.select({
+      ...comments,
+      username: users.username,
+      grade: users.grade,
+    }).from(comments).innerJoin(users, eq(comments.userId, users.id)).where(eq(comments.questionId, questionId));
+    
+    if (answerId !== undefined) {
+      query = query.where(eq(comments.answerId, answerId));
+    }
+    
+    return query.orderBy(desc(comments.createdAt));
+  }
+
+  async createComment(questionId: number, userId: number, content: string, answerId?: number): Promise<any> {
+    const [comment] = await db.insert(comments).values({ questionId, answerId, userId, content }).returning();
+    return comment;
   }
 }
 

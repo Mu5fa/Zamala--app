@@ -59,6 +59,28 @@ export const answerReports = pgTable("answer_reports", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const tags = pgTable("tags", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const questionTags = pgTable("question_tags", {
+  questionId: integer("question_id").notNull(),
+  tagId: integer("tag_id").notNull(),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.questionId, table.tagId] }),
+}));
+
+export const favorites = pgTable("favorites", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  questionId: integer("question_id").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  unique: primaryKey({ columns: [table.userId, table.questionId] }),
+}));
+
 export const insertQuestionSchema = createInsertSchema(questions).pick({
   subject: true,
   content: true,
@@ -104,3 +126,21 @@ export const insertAnswerReportSchema = z.object({
 
 export type AnswerReport = typeof answerReports.$inferSelect;
 export type InsertAnswerReport = z.infer<typeof insertAnswerReportSchema>;
+
+export type Tag = typeof tags.$inferSelect;
+export type QuestionTag = typeof questionTags.$inferSelect;
+export type Favorite = typeof favorites.$inferSelect;
+
+export const comments = pgTable("comments", {
+  id: serial("id").primaryKey(),
+  questionId: integer("question_id").notNull(),
+  answerId: integer("answer_id"),
+  userId: integer("user_id").notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type Comment = typeof comments.$inferSelect;
+export const insertCommentSchema = z.object({
+  content: z.string().min(1).max(500),
+});
