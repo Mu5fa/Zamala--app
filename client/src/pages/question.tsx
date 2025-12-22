@@ -46,6 +46,7 @@ export default function Question() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/questions/${id}/answers`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/stats/top-answerers'] });
       setAnswerContent('');
     }
   });
@@ -61,49 +62,56 @@ export default function Question() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/questions/${id}/answers`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/stats/top-answerers'] });
     }
   });
 
-  if (!question) return <div className="text-center p-8">جاري التحميل...</div>;
+  if (!question) return <div className="text-center p-8" data-testid="text-loading">جاري التحميل...</div>;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4" dir="rtl">
       <div className="max-w-4xl mx-auto">
-        <Button onClick={() => window.history.back()} variant="outline" className="mb-6">
+        <Button onClick={() => window.history.back()} variant="outline" className="mb-6" data-testid="button-back">
           ← العودة
         </Button>
 
         {/* Question */}
-        <Card className="p-8 bg-white shadow-lg mb-8">
-          <span className="text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
-            {question.subject}
-          </span>
-          <h1 className="text-2xl font-bold text-gray-900 mt-4 mb-4">{question.content}</h1>
+        <Card className="p-8 mb-8 bg-white shadow-lg">
+          <div className="flex justify-between items-start mb-4">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">{question.content}</h1>
+              <p className="text-sm text-gray-500">
+                بقلم: {question.username} ({question.grade === '4th' ? 'الرابع' : question.grade === '5th' ? 'الخامس' : 'السادس'}) • {new Date(question.createdAt).toLocaleDateString('ar-SA')}
+              </p>
+            </div>
+            <span className="text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
+              {question.subject}
+            </span>
+          </div>
           {question.imageUrl && (
             <img src={question.imageUrl} alt="question" className="w-full max-h-96 rounded mb-4 object-cover" />
           )}
-          <p className="text-sm text-gray-500">
-            {new Date(question.createdAt).toLocaleDateString('ar-SA')}
-          </p>
         </Card>
 
-        {/* Add Answer */}
+        {/* Answer Form */}
         {currentUser && (
-          <Card className="p-6 bg-white shadow-lg mb-8">
-            <h2 className="text-lg font-semibold mb-4">أضف إجابتك</h2>
+          <Card className="p-6 mb-8 bg-white shadow-lg">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">أضف إجابتك</h2>
             <div className="space-y-4">
               <Textarea
                 placeholder="اكتب إجابتك هنا..."
                 value={answerContent}
                 onChange={(e) => setAnswerContent(e.target.value)}
                 className="min-h-32"
+                data-testid="textarea-answer"
               />
               <Button
                 onClick={() => createAnswerMutation.mutate(answerContent)}
-                className="bg-blue-600 hover:bg-blue-700"
+                className="w-full bg-blue-600 hover:bg-blue-700"
                 disabled={createAnswerMutation.isPending || !answerContent}
+                data-testid="button-post-answer"
               >
-                إرسال الإجابة
+                نشر الإجابة
               </Button>
             </div>
           </Card>
@@ -111,31 +119,33 @@ export default function Question() {
 
         {/* Answers */}
         <div className="space-y-4">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">
-            الإجابات ({answers.length})
-          </h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-4">الإجابات ({answers.length})</h2>
           {answers.length === 0 ? (
-            <Card className="p-8 text-center text-gray-500">
+            <Card className="p-8 text-center text-gray-500" data-testid="text-no-answers">
               لا توجد إجابات حالياً
             </Card>
           ) : (
-            answers.map((answer: any) => (
-              <Card key={answer.id} className="p-6">
-                <p className="text-gray-900 mb-4">{answer.content}</p>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">
-                    {new Date(answer.createdAt).toLocaleDateString('ar-SA')}
-                  </span>
+            answers.map((a: any) => (
+              <Card key={a.id} className="p-6 bg-white shadow-lg" data-testid={`card-answer-${a.id}`}>
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <p className="font-semibold text-gray-900">{a.username}</p>
+                    <p className="text-xs text-gray-500">
+                      {a.grade === '4th' ? 'الرابع' : a.grade === '5th' ? 'الخامس' : 'السادس'} • {new Date(a.createdAt).toLocaleDateString('ar-SA')}
+                    </p>
+                  </div>
                   <Button
-                    onClick={() => rateMutation.mutate(answer.id)}
-                    variant="outline"
+                    onClick={() => rateMutation.mutate(a.id)}
+                    variant="ghost"
                     size="sm"
-                    className="gap-2"
+                    className="flex items-center gap-2"
+                    data-testid={`button-rate-answer-${a.id}`}
                   >
                     <ThumbsUp className="w-4 h-4" />
-                    {answer.rating}
+                    <span>{a.rating || 0}</span>
                   </Button>
                 </div>
+                <p className="text-gray-700 whitespace-pre-wrap">{a.content}</p>
               </Card>
             ))
           )}

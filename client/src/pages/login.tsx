@@ -39,6 +39,7 @@ export default function Login() {
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             disabled={loading}
+            data-testid="input-username"
           />
           <Input
             type="password"
@@ -46,12 +47,14 @@ export default function Login() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             disabled={loading}
+            data-testid="input-password"
           />
           {error && <div className="text-red-600 text-sm">{error}</div>}
           <Button 
             onClick={handleLogin} 
             className="w-full bg-blue-600 hover:bg-blue-700"
             disabled={loading || !username || !password}
+            data-testid="button-login"
           >
             {loading ? 'جاري التحميل...' : 'تسجيل الدخول'}
           </Button>

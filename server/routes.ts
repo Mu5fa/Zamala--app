@@ -6,7 +6,6 @@ import { z } from "zod";
 import { users, type User, type InsertUser } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
-import { randomUUID } from "crypto";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -21,8 +20,7 @@ export async function registerRoutes(
       if (existingUser.length > 0) {
         return res.status(400).json({ message: "اسم المستخدم موجود بالفعل", field: "username" });
       }
-      const id = randomUUID();
-      const [user] = await db.insert(users).values({ ...input, id }).returning();
+      const [user] = await db.insert(users).values(input).returning();
       (req.session as any).userId = user.id;
       res.status(201).json(user);
     } catch (err) {
@@ -84,7 +82,7 @@ export async function registerRoutes(
     }
     try {
       const input = api.questions.create.input.parse(req.body);
-      const question = await storage.createQuestion(input);
+      const question = await storage.createQuestion(input, (req.session as any).userId);
       res.status(201).json(question);
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -117,10 +115,11 @@ export async function registerRoutes(
     }
     try {
       const input = api.answers.create.input.parse(req.body);
-      const answer = await storage.createAnswer({
-        ...input,
-        questionId: Number(req.params.id)
-      });
+      const answer = await storage.createAnswer(
+        input,
+        Number(req.params.id),
+        (req.session as any).userId
+      );
       res.status(201).json(answer);
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -139,6 +138,17 @@ export async function registerRoutes(
       return res.status(404).json({ message: "الإجابة غير موجودة" });
     }
     res.json(answer);
+  });
+
+  // Statistics Routes
+  app.get('/api/stats/top-answerers', async (req, res) => {
+    const topAnswerers = await storage.getTopAnswerers(5);
+    res.json(topAnswerers);
+  });
+
+  app.get('/api/stats/top-askers', async (req, res) => {
+    const topAskers = await storage.getTopAskers(5);
+    res.json(topAskers);
   });
 
   return httpServer;

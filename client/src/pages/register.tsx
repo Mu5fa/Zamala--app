@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function Register() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [grade, setGrade] = useState('4th');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -16,7 +18,7 @@ export default function Register() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ username, password })
+        body: JSON.stringify({ username, password, grade })
       });
       if (res.ok) {
         window.location.href = '/';
@@ -40,6 +42,7 @@ export default function Register() {
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             disabled={loading}
+            data-testid="input-username"
           />
           <Input
             type="password"
@@ -47,12 +50,24 @@ export default function Register() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             disabled={loading}
+            data-testid="input-password"
           />
+          <Select value={grade} onValueChange={setGrade} disabled={loading}>
+            <SelectTrigger data-testid="select-grade">
+              <SelectValue placeholder="اختر الصف" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="4th">الرابع الإعدادي</SelectItem>
+              <SelectItem value="5th">الخامس الإعدادي</SelectItem>
+              <SelectItem value="6th">السادس الإعدادي</SelectItem>
+            </SelectContent>
+          </Select>
           {error && <div className="text-red-600 text-sm">{error}</div>}
           <Button 
             onClick={handleRegister} 
             className="w-full bg-green-600 hover:bg-green-700"
             disabled={loading || !username || password.length < 6}
+            data-testid="button-register"
           >
             {loading ? 'جاري التحميل...' : 'إنشاء حساب'}
           </Button>
