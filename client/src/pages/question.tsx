@@ -138,6 +138,19 @@ export default function Question() {
 
         {/* Question */}
         <Card className="p-8 mb-8 bg-white shadow-lg">
+          {/* Hero Image - Display at top if exists */}
+          {question.imageUrl && (
+            <div className="mb-6 -mx-8 -mt-8">
+              <img 
+                src={question.imageUrl} 
+                alt="question" 
+                className="w-full h-96 object-cover rounded-t-lg"
+                style={{ aspectRatio: '16/9' }}
+              />
+            </div>
+          )}
+          
+          {/* Question Title and Metadata */}
           <div className="flex justify-between items-start mb-4">
             <div>
               <h1 className="text-2xl font-bold text-gray-900 mb-2">{question.content}</h1>
@@ -178,9 +191,6 @@ export default function Question() {
               )}
             </div>
           </div>
-          {question.imageUrl && (
-            <img src={question.imageUrl} alt="question" className="w-full max-h-96 rounded mb-4 object-cover" />
-          )}
 
           {showReportForm && (
             <div className="mt-4 p-4 bg-red-50 rounded">

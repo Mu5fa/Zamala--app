@@ -300,20 +300,35 @@ export default function Home() {
                 </Card>
               ) : (
                 questions.map((q: any) => (
-                  <Card key={q.id} className="p-6 hover:shadow-lg transition-shadow cursor-pointer" 
+                  <Card key={q.id} className="p-4 hover:shadow-lg transition-shadow cursor-pointer" 
                         onClick={() => window.location.href = `/question/${q.id}`}
                         data-testid={`card-question-${q.id}`}>
-                    <div className="flex justify-between items-start mb-2">
-                      <span className="text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
-                        {q.subject}
-                      </span>
-                      <span className="text-xs text-gray-500">{q.grade === '4th' ? 'الرابع' : q.grade === '5th' ? 'الخامس' : 'السادس'}</span>
+                    <div className="flex gap-4 items-start">
+                      {/* Thumbnail Image - Right side */}
+                      {q.imageUrl && (
+                        <div className="flex-shrink-0">
+                          <img 
+                            src={q.imageUrl} 
+                            alt="question thumbnail" 
+                            className="w-16 h-16 rounded-md object-cover border border-gray-200"
+                          />
+                        </div>
+                      )}
+                      
+                      {/* Content - Left side */}
+                      <div className="flex-1">
+                        <div className="flex justify-between items-start mb-2">
+                          <span className="text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
+                            {q.subject}
+                          </span>
+                          <span className="text-xs text-gray-500">{q.grade === '4th' ? 'الرابع' : q.grade === '5th' ? 'الخامس' : 'السادس'}</span>
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">{q.content.substring(0, 100)}...</h3>
+                        <p className="text-sm text-gray-500">
+                          بقلم: <button onClick={(e) => { e.stopPropagation(); window.location.href = `/profile?username=${q.username}`; }} className="text-blue-600 hover:underline" data-testid={`button-user-${q.username}`}>{q.username}</button> • {new Date(q.createdAt).toLocaleDateString('ar-SA')}
+                        </p>
+                      </div>
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">{q.content.substring(0, 100)}...</h3>
-                    {q.imageUrl && <img src={q.imageUrl} alt="question" className="w-full max-h-48 rounded mb-2 object-cover" />}
-                    <p className="text-sm text-gray-500">
-                      بقلم: <button onClick={(e) => { e.stopPropagation(); window.location.href = `/profile?username=${q.username}`; }} className="text-blue-600 hover:underline" data-testid={`button-user-${q.username}`}>{q.username}</button> • {new Date(q.createdAt).toLocaleDateString('ar-SA')}
-                    </p>
                   </Card>
                 ))
               )}
