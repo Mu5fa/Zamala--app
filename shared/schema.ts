@@ -75,6 +75,11 @@ export const insertUserSchema = z.object({
   grade: z.enum(["4th", "5th", "6th"]),
 });
 
+export const loginSchema = z.object({
+  username: z.string().min(3).max(50),
+  password: z.string().min(6),
+});
+
 export type Question = typeof questions.$inferSelect;
 export type InsertQuestion = z.infer<typeof insertQuestionSchema>;
 

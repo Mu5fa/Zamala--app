@@ -75,21 +75,23 @@
   }
 }
 
-/* Select Component Styles */
-@layer components {
-  [role="combobox"] {
-    @apply bg-white !important;
-  }
+/* Select Component Styles - Override Radix UI transparency */
+[data-radix-select-trigger] {
+  background-color: rgb(255, 255, 255) !important;
+}
 
-  [role="listbox"] {
-    @apply bg-white !important;
-  }
+[data-radix-select-content] {
+  background-color: rgb(255, 255, 255) !important;
+}
 
-  .select-content {
-    @apply bg-white !important;
-  }
+[role="listbox"] {
+  background-color: rgb(255, 255, 255) !important;
+}
 
-  [role="option"] {
-    @apply bg-white hover:bg-slate-100 !important;
-  }
+[role="option"] {
+  background-color: rgb(255, 255, 255) !important;
+}
+
+[role="option"]:hover {
+  background-color: rgb(241, 245, 249) !important;
 }

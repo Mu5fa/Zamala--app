@@ -37,7 +37,8 @@ export async function registerRoutes(
   app.post(api.auth.login.path, async (req, res) => {
     try {
       const input = api.auth.login.input.parse(req.body);
-      const [user] = await db.select().from(users).where(eq(users.username, input.username));
+      const allUsers = await db.select().from(users).where(eq(users.username, input.username));
+      const user = allUsers[0];
       if (!user || user.password !== input.password) {
         return res.status(401).json({ message: "اسم المستخدم أو كلمة المرور غير صحيحة" });
       }

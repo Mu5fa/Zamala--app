@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { insertQuestionSchema, insertAnswerSchema, insertUserSchema, questions, answers, users } from './schema';
+import { insertQuestionSchema, insertAnswerSchema, insertUserSchema, loginSchema, questions, answers, users } from './schema';
 
 export const errorSchemas = {
   validation: z.object({
@@ -28,7 +28,7 @@ export const api = {
     login: {
       method: 'POST' as const,
       path: '/api/auth/login',
-      input: insertUserSchema,
+      input: loginSchema,
       responses: {
         200: z.custom<typeof users.$inferSelect>(),
         400: errorSchemas.validation,
