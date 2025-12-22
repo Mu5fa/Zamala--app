@@ -153,10 +153,10 @@ export default function Home() {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">المادة</label>
                     <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-                      <SelectTrigger>
+                      <SelectTrigger className="bg-white border border-gray-300">
                         <SelectValue placeholder="اختر المادة" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-white">
                         {SUBJECTS.map((subject) => (
                           <SelectItem key={subject} value={subject}>{subject}</SelectItem>
                         ))}
@@ -180,8 +180,8 @@ export default function Home() {
                         data-testid="input-image"
                       />
                     ) : (
-                      <div className="relative inline-block">
-                        <img src={imagePreview} alt="preview" className="mt-4 max-h-32 rounded" />
+                      <div className="relative inline-block w-full">
+                        <img src={imagePreview} alt="preview" className="mt-4 max-h-32 rounded w-full" />
                         <Button
                           onClick={() => {
                             setImageFile(null);
@@ -189,7 +189,7 @@ export default function Home() {
                           }}
                           variant="destructive"
                           size="sm"
-                          className="absolute top-2 right-2"
+                          className="absolute top-3 right-3 z-10 h-8 w-8 p-0 flex items-center justify-center"
                           data-testid="button-cancel-image"
                         >
                           ✕
@@ -219,10 +219,10 @@ export default function Home() {
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold text-blue-900">الأسئلة الأخيرة</h2>
                 <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-                  <SelectTrigger className="w-48">
+                  <SelectTrigger className="w-48 bg-white border border-gray-300">
                     <SelectValue placeholder="اختر المادة" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white">
                     {SUBJECTS.map((subject) => (
                       <SelectItem key={subject} value={subject}>{subject}</SelectItem>
                     ))}
