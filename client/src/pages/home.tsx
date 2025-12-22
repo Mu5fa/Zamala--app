@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { User } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 const SUBJECTS = ['احياء', 'رياضيات', 'لغة عربية', 'لغة انجليزية', 'حاسوب', 'كيمياء', 'فيزياء'] as const;
 
@@ -21,6 +22,7 @@ interface User {
 
 export default function Home() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [showAskForm, setShowAskForm] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState('رياضيات');
@@ -81,7 +83,10 @@ export default function Home() {
         credentials: 'include',
         body: JSON.stringify(data)
       });
-      if (!res.ok) throw new Error('Failed to create question');
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || 'فشل إنشاء السؤال');
+      }
       return res.json();
     },
     onSuccess: () => {
@@ -91,17 +96,46 @@ export default function Home() {
       setImageFile(null);
       setImagePreview('');
       setShowAskForm(false);
+      toast({
+        title: "نجح!",
+        description: "تم نشر السؤال بنجاح",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "خطأ",
+        description: error instanceof Error ? error.message : 'فشل إنشاء السؤال',
+        variant: "destructive",
+      });
     }
   });
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Check file size (max 5MB)
+      const maxSize = 5 * 1024 * 1024;
+      if (file.size > maxSize) {
+        toast({
+          title: "خطأ",
+          description: "حجم الصورة كبير جداً. الحد الأقصى 5 ميجابايت",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       setImageFile(file);
       const reader = new FileReader();
       reader.onload = (event) => {
         const result = event.target?.result as string;
         setImagePreview(result);
+      };
+      reader.onerror = () => {
+        toast({
+          title: "خطأ",
+          description: "فشل قراءة الصورة",
+          variant: "destructive",
+        });
       };
       reader.readAsDataURL(file);
     }
