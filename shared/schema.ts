@@ -50,6 +50,15 @@ export const questionReports = pgTable("question_reports", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const answerReports = pgTable("answer_reports", {
+  id: serial("id").primaryKey(),
+  answerId: integer("answer_id").notNull(),
+  reportedBy: integer("reported_by").notNull(),
+  reason: text("reason").notNull(),
+  resolved: boolean("resolved").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const insertQuestionSchema = createInsertSchema(questions).pick({
   subject: true,
   content: true,
@@ -83,3 +92,10 @@ export const insertQuestionReportSchema = z.object({
 
 export type QuestionReport = typeof questionReports.$inferSelect;
 export type InsertQuestionReport = z.infer<typeof insertQuestionReportSchema>;
+
+export const insertAnswerReportSchema = z.object({
+  reason: z.string().min(5).max(500),
+});
+
+export type AnswerReport = typeof answerReports.$inferSelect;
+export type InsertAnswerReport = z.infer<typeof insertAnswerReportSchema>;

@@ -177,6 +177,25 @@ export async function registerRoutes(
     }
   });
 
+  app.post('/api/answers/:id/report', async (req, res) => {
+    if (!(req.session as any).userId) {
+      return res.status(401).json({ message: "يجب تسجيل الدخول أولاً" });
+    }
+    try {
+      const { reason } = req.body;
+      if (!reason || reason.length < 5) {
+        return res.status(400).json({ message: "السبب يجب أن يكون على الأقل 5 أحرف" });
+      }
+      const report = await storage.reportAnswer(Number(req.params.id), (req.session as any).userId, reason);
+      res.status(201).json(report);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      throw err;
+    }
+  });
+
   app.get('/api/reports', async (req, res) => {
     if (!(req.session as any).userId) {
       return res.status(401).json({ message: "يجب تسجيل الدخول أولاً" });
@@ -189,6 +208,30 @@ export async function registerRoutes(
     res.json(reports);
   });
 
+  app.delete('/api/questions/:id', async (req, res) => {
+    if (!(req.session as any).userId) {
+      return res.status(401).json({ message: "يجب تسجيل الدخول أولاً" });
+    }
+    const [user] = await db.select().from(users).where(eq(users.id, (req.session as any).userId));
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ message: "ليس لديك صلاحية" });
+    }
+    await storage.deleteQuestion(Number(req.params.id));
+    res.json({ message: "تم حذف السؤال" });
+  });
+
+  app.delete('/api/answers/:id', async (req, res) => {
+    if (!(req.session as any).userId) {
+      return res.status(401).json({ message: "يجب تسجيل الدخول أولاً" });
+    }
+    const [user] = await db.select().from(users).where(eq(users.id, (req.session as any).userId));
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ message: "ليس لديك صلاحية" });
+    }
+    await storage.deleteAnswer(Number(req.params.id));
+    res.json({ message: "تم حذف الإجابة" });
+  });
+
   app.patch('/api/reports/:id/resolve', async (req, res) => {
     if (!(req.session as any).userId) {
       return res.status(401).json({ message: "يجب تسجيل الدخول أولاً" });
@@ -197,8 +240,27 @@ export async function registerRoutes(
     if (!user || user.role !== 'admin') {
       return res.status(403).json({ message: "ليس لديك صلاحية" });
     }
-    await storage.resolveReport(Number(req.params.id));
+    const { type } = req.body;
+    await storage.resolveReport(Number(req.params.id), type || 'question');
     res.json({ message: "تم تحديث التقرير" });
+  });
+
+  app.post('/api/reports/:id/resolve-and-delete', async (req, res) => {
+    if (!(req.session as any).userId) {
+      return res.status(401).json({ message: "يجب تسجيل الدخول أولاً" });
+    }
+    const [user] = await db.select().from(users).where(eq(users.id, (req.session as any).userId));
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ message: "ليس لديك صلاحية" });
+    }
+    const { type, contentId } = req.body;
+    if (type === 'question') {
+      await storage.deleteQuestion(contentId);
+    } else {
+      await storage.deleteAnswer(contentId);
+    }
+    await storage.resolveReport(Number(req.params.id), type);
+    res.json({ message: "تم حذف المحتوى" });
   });
 
   return httpServer;
