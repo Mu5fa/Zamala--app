@@ -3,6 +3,8 @@ import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import session from "express-session";
+import ConnectPgSimple from "connect-pg-simple";
+import { pool } from "./db";
 
 const app = express();
 const httpServer = createServer(app);
@@ -29,7 +31,13 @@ app.use(
 
 app.use(express.urlencoded({ extended: false }));
 
+const pgSession = ConnectPgSimple(session);
+
 app.use(session({
+  store: new pgSession({
+    pool: pool,
+    tableName: 'session'
+  }),
   secret: process.env.SESSION_SECRET || "dev-secret",
   resave: false,
   saveUninitialized: true,
