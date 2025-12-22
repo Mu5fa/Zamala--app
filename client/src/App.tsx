@@ -9,6 +9,7 @@ import Login from "@/pages/login";
 import Register from "@/pages/register";
 import Question from "@/pages/question";
 import Admin from "@/pages/admin";
+import Profile from "@/pages/profile";
 
 function Router() {
   return (
@@ -16,6 +17,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
+      <Route path="/profile" component={Profile} />
       <Route path="/question/:id" component={Question} />
       <Route path="/admin" component={Admin} />
       <Route component={NotFound} />

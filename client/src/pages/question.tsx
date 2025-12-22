@@ -5,9 +5,15 @@ import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { ThumbsUp, Flag, Trash2 } from 'lucide-react';
 
+interface CurrentUser {
+  id: number;
+  username: string;
+  role: string;
+}
+
 export default function Question() {
   const queryClient = useQueryClient();
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [answerContent, setAnswerContent] = useState('');
   const [ratedAnswers, setRatedAnswers] = useState<Set<number>>(new Set());
   const [reportReason, setReportReason] = useState('');

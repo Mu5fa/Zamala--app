@@ -5,12 +5,23 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { User } from 'lucide-react';
 
-const SUBJECTS = ['احياء', 'رياضيات', 'لغة عربية', 'لغة انجليزية', 'حاسوب', 'كيمياء', 'فيزياء'];
+const SUBJECTS = ['احياء', 'رياضيات', 'لغة عربية', 'لغة انجليزية', 'حاسوب', 'كيمياء', 'فيزياء'] as const;
+
+interface User {
+  id: number;
+  username: string;
+  grade: string;
+  role: string;
+  questionsAsked: number;
+  answersGiven: number;
+  totalHelpfulness: number;
+}
 
 export default function Home() {
   const queryClient = useQueryClient();
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [showAskForm, setShowAskForm] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState('رياضيات');
   const [questionContent, setQuestionContent] = useState('');
@@ -56,8 +67,14 @@ export default function Home() {
     }
   });
 
+  interface QuestionData {
+    subject: string;
+    content: string;
+    imageUrl: string | null;
+  }
+
   const createQuestionMutation = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: QuestionData) => {
       const res = await fetch('/api/questions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -88,6 +105,11 @@ export default function Home() {
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const getGradeDisplay = (grade?: string): string => {
+    if (!grade) return 'غير محدد';
+    return grade === '4th' ? 'الرابع' : grade === '5th' ? 'الخامس' : 'السادس';
   };
 
   const handleLogout = async () => {
@@ -122,9 +144,17 @@ export default function Home() {
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold text-blue-900">الزملاء</h1>
-            <p className="text-blue-700 text-sm">مرحباً {currentUser?.username} - الصف: {currentUser?.grade === '4th' ? 'الرابع' : currentUser?.grade === '5th' ? 'الخامس' : 'السادس'} الإعدادي</p>
+            <p className="text-blue-700 text-sm">مرحباً {currentUser?.username} - الصف: {getGradeDisplay(currentUser?.grade)} الإعدادي</p>
           </div>
           <div className="flex gap-2">
+            <Button 
+              onClick={() => window.location.href = '/profile'} 
+              variant="outline" 
+              size="icon" 
+              data-testid="button-profile"
+            >
+              <User className="w-4 h-4" />
+            </Button>
             {currentUser?.role === 'admin' && (
               <Button onClick={() => window.location.href = '/admin'} variant="default" data-testid="button-admin-panel">
                 لوحة التحكم

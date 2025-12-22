@@ -9,8 +9,10 @@ export default function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async () => {
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
     setLoading(true);
+    setError('');
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
@@ -25,15 +27,16 @@ export default function Login() {
       }
     } catch {
       setError('حدث خطأ ما');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <Card className="w-full max-w-md p-8 bg-white shadow-xl">
         <h1 className="text-3xl font-bold text-blue-900 mb-6 text-center">الزملاء</h1>
-        <div className="space-y-4">
+        <form onSubmit={handleLogin} className="space-y-4">
           <Input
             placeholder="اسم المستخدم"
             value={username}
@@ -51,7 +54,7 @@ export default function Login() {
           />
           {error && <div className="text-red-600 text-sm">{error}</div>}
           <Button 
-            onClick={handleLogin} 
+            type="submit"
             variant="default"
             className="w-full"
             disabled={loading || !username || !password}
@@ -63,7 +66,7 @@ export default function Login() {
             ليس لديك حساب؟{' '}
             <a href="/register" className="text-primary hover:underline" data-testid="link-register">إنشاء حساب</a>
           </p>
-        </div>
+        </form>
       </Card>
     </div>
   );

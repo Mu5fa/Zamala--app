@@ -5,9 +5,31 @@ import { Card } from '@/components/ui/card';
 import { Trash2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
+interface User {
+  id: number;
+  username: string;
+  role: string;
+}
+
+interface Report {
+  id: number;
+  type: 'question' | 'answer';
+  contentId: number;
+  content: string;
+  reporterName: string;
+  reason: string;
+  createdAt: string;
+}
+
+interface UserData extends User {
+  grade: string;
+  questionsAsked: number;
+  answersGiven: number;
+}
+
 export default function Admin() {
   const queryClient = useQueryClient();
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   useEffect(() => {
     fetch('/api/auth/me', { credentials: 'include' })
@@ -21,7 +43,7 @@ export default function Admin() {
       });
   }, []);
 
-  const { data: reports = [] } = useQuery({
+  const { data: reports = [] } = useQuery<Report[]>({
     queryKey: ['/api/reports'],
     queryFn: async () => {
       const res = await fetch('/api/reports', { credentials: 'include' });
@@ -30,7 +52,7 @@ export default function Admin() {
     }
   });
 
-  const { data: allUsers = [] } = useQuery({
+  const { data: allUsers = [] } = useQuery<UserData[]>({
     queryKey: ['/api/admin/users'],
     queryFn: async () => {
       const res = await fetch('/api/admin/users', { credentials: 'include' });
@@ -85,14 +107,14 @@ export default function Admin() {
   });
 
   if (!currentUser) {
-    return <div className="p-8 text-center">جاري التحميل...</div>;
+    return <div className="p-8 text-center min-h-screen flex items-center justify-center">جاري التحميل...</div>;
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4" dir="rtl">
       <div className="max-w-4xl mx-auto">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-blue-900">لوحة التحكم</h1>
+          <h1 className="text-3xl font-bold text-blue-900">لوحة التحكم - {currentUser?.username}</h1>
           <Button onClick={() => window.location.href = '/'} variant="outline" data-testid="button-home">
             العودة للرئيسية
           </Button>
@@ -110,7 +132,7 @@ export default function Admin() {
                 لا توجد إبلاغات في الانتظار
               </Card>
             ) : (
-              reports.map((report: any) => (
+              reports.map((report: Report) => (
                 <Card key={report.id} className="p-6 bg-white shadow-lg" data-testid={`card-report-${report.id}`}>
                   <div className="space-y-3">
                     <div>
@@ -167,7 +189,7 @@ export default function Admin() {
                 لا توجد مستخدمون
               </Card>
             ) : (
-              allUsers.map((user: any) => (
+              allUsers.map((user: UserData) => (
                 <Card key={user.id} className="p-6 bg-white shadow-lg" data-testid={`card-user-${user.id}`}>
                   <div className="flex justify-between items-center">
                     <div className="flex-1">
