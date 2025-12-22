@@ -91,7 +91,7 @@ export default function Home() {
           <h1 className="text-4xl font-bold text-blue-900 mb-4">الزملاء</h1>
           <p className="text-lg text-blue-700 mb-8">منصة الأسئلة والأجوبة للطلاب</p>
           <div className="space-y-4">
-            <Button onClick={() => window.location.href = '/login'} size="lg" className="bg-blue-600 hover:bg-blue-700" data-testid="button-login-nav">
+            <Button onClick={() => window.location.href = '/login'} size="lg" variant="default" data-testid="button-login-nav">
               تسجيل الدخول
             </Button>
             <Button onClick={() => window.location.href = '/register'} size="lg" variant="outline" data-testid="button-register-nav">
@@ -112,7 +112,7 @@ export default function Home() {
             <h1 className="text-3xl font-bold text-blue-900">الزملاء</h1>
             <p className="text-blue-700 text-sm">مرحباً {currentUser?.username} - الصف: {currentUser?.grade === '4th' ? 'الرابع' : currentUser?.grade === '5th' ? 'الخامس' : 'السادس'} الإعدادي</p>
           </div>
-          <Button onClick={handleLogout} variant="outline" data-testid="button-logout">تسجيل الخروج</Button>
+          <Button onClick={handleLogout} variant="destructive" data-testid="button-logout">تسجيل الخروج</Button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -121,7 +121,8 @@ export default function Home() {
             {/* Ask Question Button */}
             <Button 
               onClick={() => setShowAskForm(!showAskForm)}
-              className="mb-6 bg-green-500 hover:bg-green-600 w-full"
+              variant="default"
+              className="mb-6 w-full"
               data-testid="button-ask-question"
             >
               {showAskForm ? 'إلغاء' : 'اسأل سؤال جديد'}
@@ -167,7 +168,8 @@ export default function Home() {
                       content: questionContent,
                       imageUrl: imageFile ? `data:image/jpeg;base64,${imagePreview.split(',')[1]}` : null
                     })}
-                    className="w-full bg-blue-600 hover:bg-blue-700"
+                    variant="default"
+                    className="w-full"
                     disabled={createQuestionMutation.isPending || !questionContent}
                     data-testid="button-post-question"
                   >
@@ -222,7 +224,7 @@ export default function Home() {
                         <p className="text-xs text-gray-500">{user.answersGiven} إجابة</p>
                       </div>
                       {user.isGoldenColleague && (
-                        <span className="text-lg">⭐</span>
+                        <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded" data-testid="badge-golden">Golden Colleague</span>
                       )}
                     </div>
                   ))

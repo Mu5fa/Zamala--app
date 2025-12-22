@@ -65,7 +65,8 @@ export default function Register() {
           {error && <div className="text-red-600 text-sm">{error}</div>}
           <Button 
             onClick={handleRegister} 
-            className="w-full bg-green-600 hover:bg-green-700"
+            variant="default"
+            className="w-full"
             disabled={loading || !username || password.length < 6}
             data-testid="button-register"
           >
@@ -73,7 +74,7 @@ export default function Register() {
           </Button>
           <p className="text-center text-gray-600">
             لديك حساب بالفعل؟{' '}
-            <a href="/login" className="text-blue-600 hover:underline">تسجيل الدخول</a>
+            <a href="/login" className="text-primary hover:underline" data-testid="link-login">تسجيل الدخول</a>
           </p>
         </div>
       </Card>

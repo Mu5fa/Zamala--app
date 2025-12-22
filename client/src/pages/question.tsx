@@ -116,7 +116,8 @@ export default function Question() {
               />
               <Button
                 onClick={() => createAnswerMutation.mutate(answerContent)}
-                className="w-full bg-blue-600 hover:bg-blue-700"
+                variant="default"
+                className="w-full"
                 disabled={createAnswerMutation.isPending || !answerContent}
                 data-testid="button-post-answer"
               >

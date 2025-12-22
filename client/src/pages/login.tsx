@@ -52,7 +52,8 @@ export default function Login() {
           {error && <div className="text-red-600 text-sm">{error}</div>}
           <Button 
             onClick={handleLogin} 
-            className="w-full bg-blue-600 hover:bg-blue-700"
+            variant="default"
+            className="w-full"
             disabled={loading || !username || !password}
             data-testid="button-login"
           >
@@ -60,7 +61,7 @@ export default function Login() {
           </Button>
           <p className="text-center text-gray-600">
             ليس لديك حساب؟{' '}
-            <a href="/register" className="text-blue-600 hover:underline">إنشاء حساب</a>
+            <a href="/register" className="text-primary hover:underline" data-testid="link-register">إنشاء حساب</a>
           </p>
         </div>
       </Card>
