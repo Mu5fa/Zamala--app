@@ -6,11 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
+const SUBJECTS = ['احياء', 'رياضيات', 'لغة عربية', 'لغة انجليزية', 'حاسوب', 'كيمياء', 'فيزياء'];
+
 export default function Home() {
   const queryClient = useQueryClient();
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [showAskForm, setShowAskForm] = useState(false);
-  const [selectedSubject] = useState('رياضيات');
+  const [selectedSubject, setSelectedSubject] = useState('رياضيات');
   const [questionContent, setQuestionContent] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState('');
@@ -22,9 +24,9 @@ export default function Home() {
   }, []);
 
   const { data: questions = [] } = useQuery({
-    queryKey: ['/api/questions'],
+    queryKey: ['/api/questions', selectedSubject],
     queryFn: async () => {
-      const res = await fetch('/api/questions?subject=رياضيات');
+      const res = await fetch(`/api/questions?subject=${encodeURIComponent(selectedSubject)}`);
       return res.json();
     }
   });
@@ -57,7 +59,7 @@ export default function Home() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/questions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/questions', selectedSubject] });
       queryClient.invalidateQueries({ queryKey: ['/api/stats/top-askers'] });
       setQuestionContent('');
       setImageFile(null);
@@ -141,12 +143,14 @@ export default function Home() {
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">المادة</label>
-                    <Select disabled>
+                    <Select value={selectedSubject} onValueChange={setSelectedSubject}>
                       <SelectTrigger>
                         <SelectValue placeholder="اختر المادة" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="رياضيات">رياضيات</SelectItem>
+                        {SUBJECTS.map((subject) => (
+                          <SelectItem key={subject} value={subject}>{subject}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -186,7 +190,7 @@ export default function Home() {
                   </div>
                   <Button
                     onClick={() => createQuestionMutation.mutate({
-                      subject: 'رياضيات',
+                      subject: selectedSubject,
                       content: questionContent,
                       imageUrl: imageFile ? `data:image/jpeg;base64,${imagePreview.split(',')[1]}` : null
                     })}
@@ -203,7 +207,19 @@ export default function Home() {
 
             {/* Questions List */}
             <div className="space-y-4">
-              <h2 className="text-xl font-bold text-blue-900 mb-4">الأسئلة الأخيرة</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-blue-900">الأسئلة الأخيرة</h2>
+                <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="اختر المادة" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SUBJECTS.map((subject) => (
+                      <SelectItem key={subject} value={subject}>{subject}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               {questions.length === 0 ? (
                 <Card className="p-8 text-center text-gray-500" data-testid="text-no-questions">
                   لا توجد أسئلة حالياً. كن أول من يسأل!
