@@ -1,4 +1,4 @@
-import { questions, answers, users, answerRatings, type Question, type InsertQuestion, type Answer, type InsertAnswer, type User } from "@shared/schema";
+import { questions, answers, users, answerRatings, questionReports, type Question, type InsertQuestion, type Answer, type InsertAnswer, type User, type QuestionReport, type InsertQuestionReport } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql, and } from "drizzle-orm";
 
@@ -13,6 +13,10 @@ export interface IStorage {
   
   getTopAnswerers(limit?: number): Promise<(User & { totalHelpfulness: number })[]>;
   getTopAskers(limit?: number): Promise<(User & { questionsAsked: number })[]>;
+  
+  reportQuestion(questionId: number, userId: number, reason: string): Promise<QuestionReport>;
+  getReports(): Promise<(QuestionReport & { questionContent: string; reporterName: string; questionAskerName: string })[]>;
+  resolveReport(reportId: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -113,6 +117,34 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(users)
       .orderBy(desc(users.questionsAsked))
       .limit(limit);
+  }
+
+  async reportQuestion(questionId: number, userId: number, reason: string): Promise<QuestionReport> {
+    const [report] = await db.insert(questionReports).values({
+      questionId,
+      reportedBy: userId,
+      reason,
+    }).returning();
+    return report;
+  }
+
+  async getReports(): Promise<(QuestionReport & { questionContent: string; reporterName: string; questionAskerName: string })[]> {
+    return await db.select({
+      ...questionReports,
+      questionContent: questions.content,
+      reporterName: users.username,
+      questionAskerName: users.username,
+    }).from(questionReports)
+      .innerJoin(questions, eq(questionReports.questionId, questions.id))
+      .innerJoin(users, eq(questionReports.reportedBy, users.id))
+      .where(eq(questionReports.resolved, false))
+      .orderBy(desc(questionReports.createdAt));
+  }
+
+  async resolveReport(reportId: number): Promise<void> {
+    await db.update(questionReports)
+      .set({ resolved: true })
+      .where(eq(questionReports.id, reportId));
   }
 }
 

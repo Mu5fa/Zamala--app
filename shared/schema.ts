@@ -11,6 +11,7 @@ export const users = pgTable("users", {
   answersGiven: integer("answers_given").default(0),
   totalHelpfulness: integer("total_helpfulness").default(0), // sum of ratings received
   isGoldenColleague: boolean("is_golden_colleague").default(false),
+  role: text("role").default("user"), // "user" or "admin"
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -40,6 +41,15 @@ export const answerRatings = pgTable("answer_ratings", {
   pk: primaryKey({ columns: [table.answerId, table.userId] }),
 }));
 
+export const questionReports = pgTable("question_reports", {
+  id: serial("id").primaryKey(),
+  questionId: integer("question_id").notNull(),
+  reportedBy: integer("reported_by").notNull(),
+  reason: text("reason").notNull(),
+  resolved: boolean("resolved").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const insertQuestionSchema = createInsertSchema(questions).pick({
   subject: true,
   content: true,
@@ -66,3 +76,10 @@ export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 
 export type AnswerRating = typeof answerRatings.$inferSelect;
+
+export const insertQuestionReportSchema = z.object({
+  reason: z.string().min(5).max(500),
+});
+
+export type QuestionReport = typeof questionReports.$inferSelect;
+export type InsertQuestionReport = z.infer<typeof insertQuestionReportSchema>;

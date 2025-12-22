@@ -112,7 +112,14 @@ export default function Home() {
             <h1 className="text-3xl font-bold text-blue-900">الزملاء</h1>
             <p className="text-blue-700 text-sm">مرحباً {currentUser?.username} - الصف: {currentUser?.grade === '4th' ? 'الرابع' : currentUser?.grade === '5th' ? 'الخامس' : 'السادس'} الإعدادي</p>
           </div>
-          <Button onClick={handleLogout} variant="destructive" data-testid="button-logout">تسجيل الخروج</Button>
+          <div className="flex gap-2">
+            {currentUser?.role === 'admin' && (
+              <Button onClick={() => window.location.href = '/admin'} variant="default" data-testid="button-admin-panel">
+                لوحة التحكم
+              </Button>
+            )}
+            <Button onClick={handleLogout} variant="destructive" data-testid="button-logout">تسجيل الخروج</Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

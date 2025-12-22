@@ -3,13 +3,15 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { ThumbsUp } from 'lucide-react';
+import { ThumbsUp, Flag } from 'lucide-react';
 
 export default function Question() {
   const queryClient = useQueryClient();
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [answerContent, setAnswerContent] = useState('');
   const [ratedAnswers, setRatedAnswers] = useState<Set<number>>(new Set());
+  const [reportReason, setReportReason] = useState('');
+  const [showReportForm, setShowReportForm] = useState(false);
   const id = parseInt(new URL(window.location.href).pathname.split('/').pop() || '0');
 
   useEffect(() => {
@@ -70,8 +72,24 @@ export default function Question() {
       queryClient.invalidateQueries({ queryKey: ['/api/stats/top-answerers'] });
     },
     onError: (error: any) => {
-      // Show error message to user
       console.error(error.message);
+    }
+  });
+
+  const reportMutation = useMutation({
+    mutationFn: async (reason: string) => {
+      const res = await fetch(`/api/questions/${id}/report`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ reason })
+      });
+      if (!res.ok) throw new Error('Failed to report');
+      return res.json();
+    },
+    onSuccess: () => {
+      setReportReason('');
+      setShowReportForm(false);
     }
   });
 
@@ -93,12 +111,54 @@ export default function Question() {
                 بقلم: {question.username} ({question.grade === '4th' ? 'الرابع' : question.grade === '5th' ? 'الخامس' : 'السادس'}) • {new Date(question.createdAt).toLocaleDateString('ar-SA')}
               </p>
             </div>
-            <span className="text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
-              {question.subject}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
+                {question.subject}
+              </span>
+              {currentUser && (
+                <Button
+                  onClick={() => setShowReportForm(!showReportForm)}
+                  variant="ghost"
+                  size="sm"
+                  className="text-red-600"
+                  data-testid="button-report-question"
+                >
+                  <Flag className="w-4 h-4" />
+                </Button>
+              )}
+            </div>
           </div>
           {question.imageUrl && (
             <img src={question.imageUrl} alt="question" className="w-full max-h-96 rounded mb-4 object-cover" />
+          )}
+
+          {showReportForm && (
+            <div className="mt-4 p-4 bg-red-50 rounded">
+              <Textarea
+                placeholder="اشرح سبب الإبلاغ عن هذا السؤال..."
+                value={reportReason}
+                onChange={(e) => setReportReason(e.target.value)}
+                className="min-h-24 mb-3"
+                data-testid="textarea-report"
+              />
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => reportMutation.mutate(reportReason)}
+                  variant="default"
+                  disabled={reportMutation.isPending || reportReason.length < 5}
+                  data-testid="button-submit-report"
+                >
+                  إرسال الإبلاغ
+                </Button>
+                <Button
+                  onClick={() => setShowReportForm(false)}
+                  variant="outline"
+                  data-testid="button-cancel-report"
+                >
+                  إلغاء
+                </Button>
+              </div>
+            </div>
           )}
         </Card>
 

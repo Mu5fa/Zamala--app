@@ -157,5 +157,49 @@ export async function registerRoutes(
     res.json(topAskers);
   });
 
+  // Reports Routes
+  app.post('/api/questions/:id/report', async (req, res) => {
+    if (!(req.session as any).userId) {
+      return res.status(401).json({ message: "يجب تسجيل الدخول أولاً" });
+    }
+    try {
+      const { reason } = req.body;
+      if (!reason || reason.length < 5) {
+        return res.status(400).json({ message: "السبب يجب أن يكون على الأقل 5 أحرف" });
+      }
+      const report = await storage.reportQuestion(Number(req.params.id), (req.session as any).userId, reason);
+      res.status(201).json(report);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      throw err;
+    }
+  });
+
+  app.get('/api/reports', async (req, res) => {
+    if (!(req.session as any).userId) {
+      return res.status(401).json({ message: "يجب تسجيل الدخول أولاً" });
+    }
+    const [user] = await db.select().from(users).where(eq(users.id, (req.session as any).userId));
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ message: "ليس لديك صلاحية" });
+    }
+    const reports = await storage.getReports();
+    res.json(reports);
+  });
+
+  app.patch('/api/reports/:id/resolve', async (req, res) => {
+    if (!(req.session as any).userId) {
+      return res.status(401).json({ message: "يجب تسجيل الدخول أولاً" });
+    }
+    const [user] = await db.select().from(users).where(eq(users.id, (req.session as any).userId));
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ message: "ليس لديك صلاحية" });
+    }
+    await storage.resolveReport(Number(req.params.id));
+    res.json({ message: "تم تحديث التقرير" });
+  });
+
   return httpServer;
 }
