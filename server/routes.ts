@@ -3,6 +3,10 @@ import type { Server } from "http";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
+import { users, type User, type InsertUser } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
+import { randomUUID } from "crypto";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -13,12 +17,13 @@ export async function registerRoutes(
   app.post(api.auth.register.path, async (req, res) => {
     try {
       const input = api.auth.register.input.parse(req.body);
-      const existingUser = await storage.getUserByUsername(input.username);
-      if (existingUser) {
+      const existingUser = await db.select().from(users).where(eq(users.username, input.username));
+      if (existingUser.length > 0) {
         return res.status(400).json({ message: "اسم المستخدم موجود بالفعل", field: "username" });
       }
-      const user = await storage.createUser(input);
-      req.session.userId = user.id;
+      const id = randomUUID();
+      const [user] = await db.insert(users).values({ ...input, id }).returning();
+      (req.session as any).userId = user.id;
       res.status(201).json(user);
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -34,11 +39,11 @@ export async function registerRoutes(
   app.post(api.auth.login.path, async (req, res) => {
     try {
       const input = api.auth.login.input.parse(req.body);
-      const user = await storage.getUserByUsername(input.username);
+      const [user] = await db.select().from(users).where(eq(users.username, input.username));
       if (!user || user.password !== input.password) {
         return res.status(401).json({ message: "اسم المستخدم أو كلمة المرور غير صحيحة" });
       }
-      req.session.userId = user.id;
+      (req.session as any).userId = user.id;
       res.json(user);
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -59,10 +64,10 @@ export async function registerRoutes(
   });
 
   app.get(api.auth.me.path, async (req, res) => {
-    if (!req.session.userId) {
+    if (!(req.session as any).userId) {
       return res.json(null);
     }
-    const user = await storage.getUser(req.session.userId);
+    const [user] = await db.select().from(users).where(eq(users.id, (req.session as any).userId));
     res.json(user || null);
   });
 
@@ -74,15 +79,12 @@ export async function registerRoutes(
   });
 
   app.post(api.questions.create.path, async (req, res) => {
-    if (!req.session.userId) {
+    if (!(req.session as any).userId) {
       return res.status(401).json({ message: "يجب تسجيل الدخول أولاً" });
     }
     try {
       const input = api.questions.create.input.parse(req.body);
-      const question = await storage.createQuestion({
-        ...input,
-        userId: req.session.userId
-      });
+      const question = await storage.createQuestion(input);
       res.status(201).json(question);
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -110,15 +112,14 @@ export async function registerRoutes(
   });
 
   app.post(api.answers.create.path, async (req, res) => {
-    if (!req.session.userId) {
+    if (!(req.session as any).userId) {
       return res.status(401).json({ message: "يجب تسجيل الدخول أولاً" });
     }
     try {
       const input = api.answers.create.input.parse(req.body);
       const answer = await storage.createAnswer({
         ...input,
-        questionId: Number(req.params.id),
-        userId: req.session.userId
+        questionId: Number(req.params.id)
       });
       res.status(201).json(answer);
     } catch (err) {
