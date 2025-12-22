@@ -269,5 +269,32 @@ export async function registerRoutes(
     res.json({ message: "تم حذف المحتوى" });
   });
 
+  app.get('/api/admin/users', async (req, res) => {
+    if (!(req.session as any).userId) {
+      return res.status(401).json({ message: "يجب تسجيل الدخول أولاً" });
+    }
+    const [user] = await db.select().from(users).where(eq(users.id, (req.session as any).userId));
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ message: "ليس لديك صلاحية" });
+    }
+    const allUsers = await storage.getAllUsers();
+    res.json(allUsers);
+  });
+
+  app.delete('/api/admin/users/:id', async (req, res) => {
+    if (!(req.session as any).userId) {
+      return res.status(401).json({ message: "يجب تسجيل الدخول أولاً" });
+    }
+    const [user] = await db.select().from(users).where(eq(users.id, (req.session as any).userId));
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ message: "ليس لديك صلاحية" });
+    }
+    if (user.id === Number(req.params.id)) {
+      return res.status(400).json({ message: "لا يمكنك حذف حسابك الخاص" });
+    }
+    await storage.deleteUser(Number(req.params.id));
+    res.json({ message: "تم حذف الحساب" });
+  });
+
   return httpServer;
 }

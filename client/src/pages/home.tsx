@@ -83,7 +83,8 @@ export default function Home() {
       setImageFile(file);
       const reader = new FileReader();
       reader.onload = (event) => {
-        setImagePreview(event.target?.result as string);
+        const result = event.target?.result as string;
+        setImagePreview(result);
       };
       reader.readAsDataURL(file);
     }
@@ -201,7 +202,7 @@ export default function Home() {
                     onClick={() => createQuestionMutation.mutate({
                       subject: selectedSubject,
                       content: questionContent,
-                      imageUrl: imageFile ? `data:image/jpeg;base64,${imagePreview.split(',')[1]}` : null
+                      imageUrl: imagePreview || null
                     })}
                     variant="default"
                     className="w-full"

@@ -21,6 +21,8 @@ export interface IStorage {
   resolveReport(reportId: number, type: 'question' | 'answer'): Promise<void>;
   deleteQuestion(questionId: number): Promise<void>;
   deleteAnswer(answerId: number): Promise<void>;
+  getAllUsers(): Promise<User[]>;
+  deleteUser(userId: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -212,6 +214,34 @@ export class DatabaseStorage implements IStorage {
   async deleteAnswer(answerId: number): Promise<void> {
     await db.delete(answerReports).where(eq(answerReports.answerId, answerId));
     await db.delete(answers).where(eq(answers.id, answerId));
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return await db.select().from(users).orderBy(desc(users.createdAt));
+  }
+
+  async deleteUser(userId: number): Promise<void> {
+    // Delete all answers and their reports
+    const userAnswers = await db.select({ id: answers.id }).from(answers).where(eq(answers.userId, userId));
+    for (const answer of userAnswers) {
+      await db.delete(answerReports).where(eq(answerReports.answerId, answer.id));
+    }
+    await db.delete(answers).where(eq(answers.userId, userId));
+
+    // Delete all questions and their reports and answers
+    const userQuestions = await db.select({ id: questions.id }).from(questions).where(eq(questions.userId, userId));
+    for (const question of userQuestions) {
+      const questionAnswers = await db.select({ id: answers.id }).from(answers).where(eq(answers.questionId, question.id));
+      for (const answer of questionAnswers) {
+        await db.delete(answerReports).where(eq(answerReports.answerId, answer.id));
+      }
+      await db.delete(answers).where(eq(answers.questionId, question.id));
+      await db.delete(questionReports).where(eq(questionReports.questionId, question.id));
+    }
+    await db.delete(questions).where(eq(questions.userId, userId));
+
+    // Delete the user
+    await db.delete(users).where(eq(users.id, userId));
   }
 }
 
