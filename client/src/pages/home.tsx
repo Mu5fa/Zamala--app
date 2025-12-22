@@ -138,12 +138,12 @@ export default function Home() {
 
         {/* Filter */}
         <div className="mb-6">
-          <Select value={filterSubject} onValueChange={setFilterSubject}>
+          <Select value={filterSubject || "all"} onValueChange={(val) => setFilterSubject(val === "all" ? "" : val)}>
             <SelectTrigger className="w-48">
               <SelectValue placeholder="جميع المواد" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">جميع المواد</SelectItem>
+              <SelectItem value="all">جميع المواد</SelectItem>
               <SelectItem value="رياضيات">رياضيات</SelectItem>
               <SelectItem value="علوم">علوم</SelectItem>
               <SelectItem value="عربي">عربي</SelectItem>
