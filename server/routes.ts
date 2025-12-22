@@ -70,6 +70,15 @@ export async function registerRoutes(
     res.json(user || null);
   });
 
+  // Users Routes
+  app.get(api.users.getByUsername.path, async (req, res) => {
+    const user = await storage.getUserByUsername(req.params.username);
+    if (!user) {
+      return res.status(404).json({ message: "المستخدم غير موجود" });
+    }
+    res.json(user);
+  });
+
   // Questions Routes
   app.get(api.questions.list.path, async (req, res) => {
     const subject = req.query.subject ? String(req.query.subject) : undefined;

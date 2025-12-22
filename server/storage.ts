@@ -14,6 +14,7 @@ export interface IStorage {
   getTopAnswerers(limit?: number): Promise<(User & { totalHelpfulness: number })[]>;
   getTopAskers(limit?: number): Promise<(User & { questionsAsked: number })[]>;
   getTotalUsersCount(): Promise<number>;
+  getUserByUsername(username: string): Promise<User | undefined>;
   
   reportQuestion(questionId: number, userId: number, reason: string): Promise<QuestionReport>;
   reportAnswer(answerId: number, userId: number, reason: string): Promise<AnswerReport>;
@@ -123,6 +124,11 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(users)
       .orderBy(desc(users.questionsAsked))
       .limit(limit);
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
   }
 
   async getTotalUsersCount(): Promise<number> {

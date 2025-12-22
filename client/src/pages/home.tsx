@@ -312,7 +312,7 @@ export default function Home() {
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">{q.content.substring(0, 100)}...</h3>
                     {q.imageUrl && <img src={q.imageUrl} alt="question" className="w-full max-h-48 rounded mb-2 object-cover" />}
                     <p className="text-sm text-gray-500">
-                      بقلم: {q.username} • {new Date(q.createdAt).toLocaleDateString('ar-SA')}
+                      بقلم: <button onClick={(e) => { e.stopPropagation(); window.location.href = `/profile?username=${q.username}`; }} className="text-blue-600 hover:underline" data-testid={`button-user-${q.username}`}>{q.username}</button> • {new Date(q.createdAt).toLocaleDateString('ar-SA')}
                     </p>
                   </Card>
                 ))
@@ -339,9 +339,9 @@ export default function Home() {
                   <p className="text-gray-500 text-sm">لم يوجد بيانات بعد</p>
                 ) : (
                   topAnswerers.map((user: any, idx: number) => (
-                    <div key={user.id} className="flex justify-between items-center p-2 bg-gray-50 rounded" data-testid={`stat-answerer-${user.id}`}>
+                    <div key={user.id} className="flex justify-between items-center p-2 bg-gray-50 rounded hover:bg-gray-100 cursor-pointer" onClick={() => window.location.href = `/profile?username=${user.username}`} data-testid={`stat-answerer-${user.id}`}>
                       <div>
-                        <p className="font-semibold text-sm">{idx + 1}. {user.username}</p>
+                        <p className="font-semibold text-sm">{idx + 1}. <button onClick={(e) => { e.stopPropagation(); }} className="text-blue-600 hover:underline" data-testid={`button-top-answerer-${user.id}`}>{user.username}</button></p>
                         <p className="text-xs text-gray-500">{user.answersGiven} إجابة</p>
                       </div>
                       {user.isGoldenColleague && (
@@ -361,9 +361,9 @@ export default function Home() {
                   <p className="text-gray-500 text-sm">لم يوجد بيانات بعد</p>
                 ) : (
                   topAskers.map((user: any, idx: number) => (
-                    <div key={user.id} className="flex justify-between items-center p-2 bg-gray-50 rounded" data-testid={`stat-asker-${user.id}`}>
+                    <div key={user.id} className="flex justify-between items-center p-2 bg-gray-50 rounded hover:bg-gray-100 cursor-pointer" onClick={() => window.location.href = `/profile?username=${user.username}`} data-testid={`stat-asker-${user.id}`}>
                       <div>
-                        <p className="font-semibold text-sm">{idx + 1}. {user.username}</p>
+                        <p className="font-semibold text-sm">{idx + 1}. <button onClick={(e) => { e.stopPropagation(); }} className="text-blue-600 hover:underline" data-testid={`button-top-asker-${user.id}`}>{user.username}</button></p>
                         <p className="text-xs text-gray-500">{user.questionsAsked} سؤال</p>
                       </div>
                     </div>

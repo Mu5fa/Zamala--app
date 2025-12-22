@@ -142,7 +142,7 @@ export default function Question() {
             <div>
               <h1 className="text-2xl font-bold text-gray-900 mb-2">{question.content}</h1>
               <p className="text-sm text-gray-500">
-                بقلم: {question.username} ({question.grade === '4th' ? 'الرابع' : question.grade === '5th' ? 'الخامس' : 'السادس'}) • {new Date(question.createdAt).toLocaleDateString('ar-SA')}
+                بقلم: <button onClick={() => window.location.href = `/profile?username=${question.username}`} className="text-blue-600 hover:underline" data-testid={`button-user-${question.username}`}>{question.username}</button> ({question.grade === '4th' ? 'الرابع' : question.grade === '5th' ? 'الخامس' : 'السادس'}) • {new Date(question.createdAt).toLocaleDateString('ar-SA')}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -249,7 +249,7 @@ export default function Question() {
               <Card key={a.id} className="p-6 bg-white shadow-lg" data-testid={`card-answer-${a.id}`}>
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <p className="font-semibold text-gray-900">{a.username}</p>
+                    <p className="font-semibold text-gray-900"><button onClick={() => window.location.href = `/profile?username=${a.username}`} className="text-blue-600 hover:underline" data-testid={`button-answer-user-${a.username}`}>{a.username}</button></p>
                     <p className="text-xs text-gray-500">
                       {a.grade === '4th' ? 'الرابع' : a.grade === '5th' ? 'الخامس' : 'السادس'} • {new Date(a.createdAt).toLocaleDateString('ar-SA')}
                     </p>

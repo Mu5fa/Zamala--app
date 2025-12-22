@@ -50,6 +50,16 @@ export const api = {
       },
     },
   },
+  users: {
+    getByUsername: {
+      method: 'GET' as const,
+      path: '/api/users/:username',
+      responses: {
+        200: z.custom<typeof users.$inferSelect>(),
+        404: errorSchemas.notFound,
+      },
+    },
+  },
   questions: {
     list: {
       method: 'GET' as const,

@@ -17,18 +17,45 @@ interface UserProfile {
 export default function Profile() {
   const [userData, setUserData] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isCurrentUser, setIsCurrentUser] = useState(false);
 
   useEffect(() => {
-    fetch('/api/auth/me', { credentials: 'include' })
-      .then(res => res.json())
-      .then(data => {
-        if (!data) {
-          window.location.href = '/login';
-        } else {
+    const getProfile = async () => {
+      const urlUsername = new URL(window.location.href).searchParams.get('username');
+      
+      if (urlUsername) {
+        // View another user's profile
+        try {
+          const res = await fetch(`/api/users/${encodeURIComponent(urlUsername)}`);
+          if (!res.ok) {
+            window.location.href = '/';
+            return;
+          }
+          const data = await res.json();
           setUserData(data);
+          setIsCurrentUser(false);
+        } catch {
+          window.location.href = '/';
         }
-      })
-      .finally(() => setLoading(false));
+      } else {
+        // View current user's profile
+        try {
+          const res = await fetch('/api/auth/me', { credentials: 'include' });
+          const data = await res.json();
+          if (!data) {
+            window.location.href = '/login';
+          } else {
+            setUserData(data);
+            setIsCurrentUser(true);
+          }
+        } catch {
+          window.location.href = '/login';
+        }
+      }
+      setLoading(false);
+    };
+    
+    getProfile();
   }, []);
 
   if (loading) {
@@ -45,9 +72,11 @@ export default function Profile() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4" dir="rtl">
       <div className="max-w-2xl mx-auto">
-        <Button onClick={() => window.location.href = '/'} variant="outline" className="mb-8" data-testid="button-back">
-          العودة للرئيسية
-        </Button>
+        <div className="flex gap-2 mb-8">
+          <Button onClick={() => window.location.href = '/'} variant="outline" data-testid="button-back">
+            العودة للرئيسية
+          </Button>
+        </div>
 
         <Card className="p-8 bg-white shadow-lg">
           <div className="flex items-center justify-center mb-8">
