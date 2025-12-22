@@ -159,14 +159,29 @@ export default function Home() {
                   />
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">رفع صورة (اختياري)</label>
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageChange}
-                      data-testid="input-image"
-                    />
-                    {imagePreview && (
-                      <img src={imagePreview} alt="preview" className="mt-4 max-h-32 rounded" />
+                    {!imagePreview ? (
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                        data-testid="input-image"
+                      />
+                    ) : (
+                      <div className="relative inline-block">
+                        <img src={imagePreview} alt="preview" className="mt-4 max-h-32 rounded" />
+                        <Button
+                          onClick={() => {
+                            setImageFile(null);
+                            setImagePreview('');
+                          }}
+                          variant="destructive"
+                          size="sm"
+                          className="absolute top-2 right-2"
+                          data-testid="button-cancel-image"
+                        >
+                          ✕
+                        </Button>
+                      </div>
                     )}
                   </div>
                   <Button

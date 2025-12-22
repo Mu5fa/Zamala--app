@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Trash2 } from 'lucide-react';
 
 export default function Admin() {
   const queryClient = useQueryClient();
@@ -35,6 +36,22 @@ export default function Admin() {
         credentials: 'include'
       });
       if (!res.ok) throw new Error('Failed to resolve');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/reports'] });
+    }
+  });
+
+  const deleteAndResolveMutation = useMutation({
+    mutationFn: async ({ reportId, contentId, type }: { reportId: number; contentId: number; type: 'question' | 'answer' }) => {
+      const res = await fetch(`/api/reports/${reportId}/resolve-and-delete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ contentId, type })
+      });
+      if (!res.ok) throw new Error('Failed to delete and resolve');
       return res.json();
     },
     onSuccess: () => {
@@ -77,15 +94,35 @@ export default function Admin() {
                     <span className="text-xs text-gray-500">
                       أبلغ عن طريق: {report.reporterName} • {new Date(report.createdAt).toLocaleDateString('ar-SA')}
                     </span>
-                    <Button
-                      onClick={() => resolveMutation.mutate(report.id)}
-                      variant="default"
-                      size="sm"
-                      disabled={resolveMutation.isPending}
-                      data-testid={`button-resolve-${report.id}`}
-                    >
-                      تم المراجعة
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => {
+                          if (confirm(`هل تريد حذف ${report.type === 'question' ? 'السؤال' : 'الإجابة'}؟`)) {
+                            deleteAndResolveMutation.mutate({
+                              reportId: report.id,
+                              contentId: report.contentId,
+                              type: report.type
+                            });
+                          }
+                        }}
+                        variant="destructive"
+                        size="sm"
+                        disabled={deleteAndResolveMutation.isPending}
+                        data-testid={`button-delete-resolve-${report.id}`}
+                      >
+                        <Trash2 className="w-4 h-4 mr-1" />
+                        حذف
+                      </Button>
+                      <Button
+                        onClick={() => resolveMutation.mutate(report.id)}
+                        variant="default"
+                        size="sm"
+                        disabled={resolveMutation.isPending}
+                        data-testid={`button-resolve-${report.id}`}
+                      >
+                        تم المراجعة
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </Card>

@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { ThumbsUp, Flag } from 'lucide-react';
+import { ThumbsUp, Flag, Trash2 } from 'lucide-react';
 
 export default function Question() {
   const queryClient = useQueryClient();
@@ -93,6 +93,34 @@ export default function Question() {
     }
   });
 
+  const deleteQuestionMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/questions/${id}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      if (!res.ok) throw new Error('Failed to delete question');
+      return res.json();
+    },
+    onSuccess: () => {
+      window.history.back();
+    }
+  });
+
+  const deleteAnswerMutation = useMutation({
+    mutationFn: async (answerId: number) => {
+      const res = await fetch(`/api/answers/${answerId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      if (!res.ok) throw new Error('Failed to delete answer');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/questions/${id}/answers`] });
+    }
+  });
+
   if (!question) return <div className="text-center p-8" data-testid="text-loading">جاري التحميل...</div>;
 
   return (
@@ -115,6 +143,22 @@ export default function Question() {
               <span className="text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
                 {question.subject}
               </span>
+              {currentUser?.role === 'admin' && (
+                <Button
+                  onClick={() => {
+                    if (confirm('هل تريد حذف هذا السؤال؟')) {
+                      deleteQuestionMutation.mutate();
+                    }
+                  }}
+                  variant="ghost"
+                  size="sm"
+                  className="text-red-600"
+                  disabled={deleteQuestionMutation.isPending}
+                  data-testid="button-delete-question"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              )}
               {currentUser && (
                 <Button
                   onClick={() => setShowReportForm(!showReportForm)}
@@ -204,17 +248,35 @@ export default function Question() {
                       {a.grade === '4th' ? 'الرابع' : a.grade === '5th' ? 'الخامس' : 'السادس'} • {new Date(a.createdAt).toLocaleDateString('ar-SA')}
                     </p>
                   </div>
-                  <Button
-                    onClick={() => rateMutation.mutate(a.id)}
-                    variant="ghost"
-                    size="sm"
-                    className="flex items-center gap-2"
-                    disabled={!currentUser || ratedAnswers.has(a.id) || rateMutation.isPending}
-                    data-testid={`button-rate-answer-${a.id}`}
-                  >
-                    <ThumbsUp className="w-4 h-4" />
-                    <span>{a.rating || 0}</span>
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    {currentUser?.role === 'admin' && (
+                      <Button
+                        onClick={() => {
+                          if (confirm('هل تريد حذف هذه الإجابة؟')) {
+                            deleteAnswerMutation.mutate(a.id);
+                          }
+                        }}
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-600"
+                        disabled={deleteAnswerMutation.isPending}
+                        data-testid={`button-delete-answer-${a.id}`}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                    <Button
+                      onClick={() => rateMutation.mutate(a.id)}
+                      variant="ghost"
+                      size="sm"
+                      className="flex items-center gap-2"
+                      disabled={!currentUser || ratedAnswers.has(a.id) || rateMutation.isPending}
+                      data-testid={`button-rate-answer-${a.id}`}
+                    >
+                      <ThumbsUp className="w-4 h-4" />
+                      <span>{a.rating || 0}</span>
+                    </Button>
+                  </div>
                 </div>
                 <p className="text-gray-700 whitespace-pre-wrap">{a.content}</p>
               </Card>
