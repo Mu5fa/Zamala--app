@@ -47,6 +47,15 @@ export default function Home() {
     }
   });
 
+  const { data: usersCount = 0 } = useQuery({
+    queryKey: ['/api/stats/users-count'],
+    queryFn: async () => {
+      const res = await fetch('/api/stats/users-count');
+      const data = await res.json();
+      return data.count;
+    }
+  });
+
   const createQuestionMutation = useMutation({
     mutationFn: async (data: any) => {
       const res = await fetch('/api/questions', {
@@ -248,6 +257,15 @@ export default function Home() {
 
           {/* Sidebar Stats */}
           <div className="space-y-6">
+            {/* Users Count */}
+            <Card className="p-6 bg-white shadow-lg">
+              <h3 className="text-lg font-bold text-blue-900 mb-4">عدد المستخدمين</h3>
+              <div className="text-center">
+                <p className="text-4xl font-bold text-blue-600">{usersCount}</p>
+                <p className="text-sm text-gray-500 mt-2">طالب وطالبة</p>
+              </div>
+            </Card>
+
             {/* Top Answerers */}
             <Card className="p-6 bg-white shadow-lg">
               <h3 className="text-lg font-bold text-blue-900 mb-4">أكثر الطلاب إجابة</h3>

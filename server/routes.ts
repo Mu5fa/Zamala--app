@@ -157,6 +157,11 @@ export async function registerRoutes(
     res.json(topAskers);
   });
 
+  app.get('/api/stats/users-count', async (req, res) => {
+    const count = await storage.getTotalUsersCount();
+    res.json({ count });
+  });
+
   // Reports Routes
   app.post('/api/questions/:id/report', async (req, res) => {
     if (!(req.session as any).userId) {
