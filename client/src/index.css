@@ -74,3 +74,22 @@
     @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/10;
   }
 }
+
+/* Select Component Styles */
+@layer components {
+  [role="combobox"] {
+    @apply bg-white !important;
+  }
+
+  [role="listbox"] {
+    @apply bg-white !important;
+  }
+
+  .select-content {
+    @apply bg-white !important;
+  }
+
+  [role="option"] {
+    @apply bg-white hover:bg-slate-100 !important;
+  }
+}
