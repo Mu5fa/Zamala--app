@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { insertQuestionSchema, insertAnswerSchema, questions, answers } from './schema';
+import { insertQuestionSchema, insertAnswerSchema, insertUserSchema, questions, answers, users } from './schema';
 
 export const errorSchemas = {
   validation: z.object({
@@ -15,12 +15,47 @@ export const errorSchemas = {
 };
 
 export const api = {
+  auth: {
+    register: {
+      method: 'POST' as const,
+      path: '/api/auth/register',
+      input: insertUserSchema,
+      responses: {
+        201: z.custom<typeof users.$inferSelect>(),
+        400: errorSchemas.validation,
+      },
+    },
+    login: {
+      method: 'POST' as const,
+      path: '/api/auth/login',
+      input: insertUserSchema,
+      responses: {
+        200: z.custom<typeof users.$inferSelect>(),
+        400: errorSchemas.validation,
+        401: z.object({ message: z.string() }),
+      },
+    },
+    logout: {
+      method: 'POST' as const,
+      path: '/api/auth/logout',
+      responses: {
+        200: z.object({ message: z.string() }),
+      },
+    },
+    me: {
+      method: 'GET' as const,
+      path: '/api/auth/me',
+      responses: {
+        200: z.custom<typeof users.$inferSelect>().nullable(),
+      },
+    },
+  },
   questions: {
     list: {
       method: 'GET' as const,
       path: '/api/questions',
       input: z.object({
-        grade: z.coerce.number().optional(),
+        subject: z.string().optional(),
       }).optional(),
       responses: {
         200: z.array(z.custom<typeof questions.$inferSelect>()),
@@ -61,9 +96,9 @@ export const api = {
         400: errorSchemas.validation,
       },
     },
-    like: {
+    rate: {
       method: 'PATCH' as const,
-      path: '/api/answers/:id/like',
+      path: '/api/answers/:id/rate',
       responses: {
         200: z.custom<typeof answers.$inferSelect>(),
         404: errorSchemas.notFound,
