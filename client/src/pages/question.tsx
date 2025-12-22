@@ -9,6 +9,7 @@ export default function Question() {
   const queryClient = useQueryClient();
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [answerContent, setAnswerContent] = useState('');
+  const [ratedAnswers, setRatedAnswers] = useState<Set<number>>(new Set());
   const id = parseInt(new URL(window.location.href).pathname.split('/').pop() || '0');
 
   useEffect(() => {
@@ -57,12 +58,20 @@ export default function Question() {
         method: 'PATCH',
         credentials: 'include'
       });
-      if (!res.ok) throw new Error('Failed to rate');
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || 'Failed to rate');
+      }
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (_, answerId) => {
+      setRatedAnswers(prev => new Set(prev).add(answerId));
       queryClient.invalidateQueries({ queryKey: [`/api/questions/${id}/answers`] });
       queryClient.invalidateQueries({ queryKey: ['/api/stats/top-answerers'] });
+    },
+    onError: (error: any) => {
+      // Show error message to user
+      console.error(error.message);
     }
   });
 
@@ -139,6 +148,7 @@ export default function Question() {
                     variant="ghost"
                     size="sm"
                     className="flex items-center gap-2"
+                    disabled={!currentUser || ratedAnswers.has(a.id) || rateMutation.isPending}
                     data-testid={`button-rate-answer-${a.id}`}
                   >
                     <ThumbsUp className="w-4 h-4" />

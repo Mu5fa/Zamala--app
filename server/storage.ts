@@ -1,6 +1,6 @@
-import { questions, answers, users, type Question, type InsertQuestion, type Answer, type InsertAnswer, type User } from "@shared/schema";
+import { questions, answers, users, answerRatings, type Question, type InsertQuestion, type Answer, type InsertAnswer, type User } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, sql } from "drizzle-orm";
+import { eq, desc, sql, and } from "drizzle-orm";
 
 export interface IStorage {
   getQuestions(subject?: string): Promise<(Question & { username: string; grade: string })[]>;
@@ -9,7 +9,7 @@ export interface IStorage {
   
   getAnswers(questionId: number): Promise<(Answer & { username: string; grade: string })[]>;
   createAnswer(answer: InsertAnswer, questionId: number, userId: number): Promise<Answer>;
-  rateAnswer(id: number): Promise<Answer | undefined>;
+  rateAnswer(id: number, userId: number): Promise<{ answer: Answer; alreadyRated: boolean } | undefined>;
   
   getTopAnswerers(limit?: number): Promise<(User & { totalHelpfulness: number })[]>;
   getTopAskers(limit?: number): Promise<(User & { questionsAsked: number })[]>;
@@ -76,9 +76,20 @@ export class DatabaseStorage implements IStorage {
     return answer;
   }
 
-  async rateAnswer(id: number): Promise<Answer | undefined> {
+  async rateAnswer(id: number, userId: number): Promise<{ answer: Answer; alreadyRated: boolean } | undefined> {
     const [answer] = await db.select().from(answers).where(eq(answers.id, id));
     if (!answer) return undefined;
+
+    // Check if user already rated this answer
+    const [existingRating] = await db.select().from(answerRatings)
+      .where(and(eq(answerRatings.answerId, id), eq(answerRatings.userId, userId)));
+    
+    if (existingRating) {
+      return { answer, alreadyRated: true };
+    }
+
+    // Add rating
+    await db.insert(answerRatings).values({ answerId: id, userId });
 
     const [updatedAnswer] = await db.update(answers)
       .set({ rating: (answer.rating || 0) + 1 })
@@ -89,7 +100,7 @@ export class DatabaseStorage implements IStorage {
       totalHelpfulness: sql`${users.totalHelpfulness} + 1`
     }).where(eq(users.id, answer.userId));
     
-    return updatedAnswer;
+    return { answer: updatedAnswer, alreadyRated: false };
   }
 
   async getTopAnswerers(limit = 5): Promise<(User & { totalHelpfulness: number })[]> {

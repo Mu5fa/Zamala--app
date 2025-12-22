@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, timestamp, varchar, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, varchar, boolean, primaryKey } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -32,6 +32,14 @@ export const answers = pgTable("answers", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const answerRatings = pgTable("answer_ratings", {
+  answerId: integer("answer_id").notNull(),
+  userId: integer("user_id").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.answerId, table.userId] }),
+}));
+
 export const insertQuestionSchema = createInsertSchema(questions).pick({
   subject: true,
   content: true,
@@ -56,3 +64,5 @@ export type InsertAnswer = z.infer<typeof insertAnswerSchema>;
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
+
+export type AnswerRating = typeof answerRatings.$inferSelect;

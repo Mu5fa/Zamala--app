@@ -133,11 +133,17 @@ export async function registerRoutes(
   });
 
   app.patch(api.answers.rate.path, async (req, res) => {
-    const answer = await storage.rateAnswer(Number(req.params.id));
-    if (!answer) {
+    if (!(req.session as any).userId) {
+      return res.status(401).json({ message: "يجب تسجيل الدخول أولاً" });
+    }
+    const result = await storage.rateAnswer(Number(req.params.id), (req.session as any).userId);
+    if (!result) {
       return res.status(404).json({ message: "الإجابة غير موجودة" });
     }
-    res.json(answer);
+    if (result.alreadyRated) {
+      return res.status(400).json({ message: "أنت قد قيمت هذه الإجابة مسبقاً" });
+    }
+    res.json(result.answer);
   });
 
   // Statistics Routes
