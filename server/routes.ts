@@ -141,6 +141,23 @@ export async function registerRoutes(
     res.json(comment);
   });
 
+  // Notifications Routes
+  app.get('/api/notifications', async (req, res) => {
+    if (!(req.session as any).userId) {
+      return res.status(401).json({ message: "يجب تسجيل الدخول أولاً" });
+    }
+    const notifications = await storage.getNotifications((req.session as any).userId);
+    res.json(notifications);
+  });
+
+  app.patch('/api/notifications/:notificationId/read', async (req, res) => {
+    if (!(req.session as any).userId) {
+      return res.status(401).json({ message: "يجب تسجيل الدخول أولاً" });
+    }
+    await storage.markNotificationAsRead(Number(req.params.notificationId));
+    res.json({ message: "تم تحديث الإشعار" });
+  });
+
   // Questions Routes
   app.get(api.questions.list.path, async (req, res) => {
     const subject = req.query.subject ? String(req.query.subject) : undefined;
@@ -192,6 +209,23 @@ export async function registerRoutes(
         Number(req.params.id),
         (req.session as any).userId
       );
+      
+      // Get question details to send notification to question owner
+      const question = await storage.getQuestion(Number(req.params.id));
+      if (question) {
+        const currentUser = await db.select().from(users).where(eq(users.id, (req.session as any).userId));
+        if (currentUser[0] && question.userId !== (req.session as any).userId) {
+          await storage.createNotification(
+            question.userId,
+            'answer',
+            `أجاب ${currentUser[0].username} على سؤالك`,
+            (req.session as any).userId,
+            Number(req.params.id),
+            answer.id
+          );
+        }
+      }
+      
       res.status(201).json(answer);
     } catch (err) {
       if (err instanceof z.ZodError) {

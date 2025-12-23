@@ -144,3 +144,17 @@ export type Comment = typeof comments.$inferSelect;
 export const insertCommentSchema = z.object({
   content: z.string().min(1).max(500),
 });
+
+export const notifications = pgTable("notifications", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  type: text("type").notNull(), // "answer", "comment", "rating"
+  content: text("content").notNull(),
+  questionId: integer("question_id"),
+  answerId: integer("answer_id"),
+  fromUserId: integer("from_user_id"),
+  isRead: boolean("is_read").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type Notification = typeof notifications.$inferSelect;

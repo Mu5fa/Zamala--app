@@ -1,4 +1,4 @@
-import { questions, answers, users, answerRatings, questionReports, answerReports, tags, questionTags, favorites, comments, type Question, type InsertQuestion, type Answer, type InsertAnswer, type User, type QuestionReport, type InsertQuestionReport, type AnswerReport, type InsertAnswerReport, type Tag } from "@shared/schema";
+import { questions, answers, users, answerRatings, questionReports, answerReports, tags, questionTags, favorites, comments, notifications, type Question, type InsertQuestion, type Answer, type InsertAnswer, type User, type QuestionReport, type InsertQuestionReport, type AnswerReport, type InsertAnswerReport, type Tag, type Notification } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql, and, like, inArray } from "drizzle-orm";
 
@@ -33,6 +33,10 @@ export interface IStorage {
   
   getComments(questionId: number, answerId?: number): Promise<any[]>;
   createComment(questionId: number, userId: number, content: string, answerId?: number): Promise<any>;
+  
+  getNotifications(userId: number): Promise<Notification[]>;
+  createNotification(userId: number, type: string, content: string, fromUserId?: number, questionId?: number, answerId?: number): Promise<Notification>;
+  markNotificationAsRead(notificationId: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -349,6 +353,34 @@ export class DatabaseStorage implements IStorage {
   async createComment(questionId: number, userId: number, content: string, answerId?: number): Promise<any> {
     const [comment] = await db.insert(comments).values({ questionId, answerId, userId, content }).returning();
     return comment;
+  }
+
+  async getNotifications(userId: number): Promise<any[]> {
+    return await db.select({
+      ...notifications,
+      fromUsername: users.username,
+    }).from(notifications)
+      .leftJoin(users, eq(notifications.fromUserId, users.id))
+      .where(eq(notifications.userId, userId))
+      .orderBy(desc(notifications.createdAt));
+  }
+
+  async createNotification(userId: number, type: string, content: string, fromUserId?: number, questionId?: number, answerId?: number): Promise<any> {
+    const [notification] = await db.insert(notifications).values({
+      userId,
+      type,
+      content,
+      fromUserId,
+      questionId,
+      answerId
+    }).returning();
+    return notification;
+  }
+
+  async markNotificationAsRead(notificationId: number): Promise<void> {
+    await db.update(notifications)
+      .set({ isRead: true })
+      .where(eq(notifications.id, notificationId));
   }
 }
 

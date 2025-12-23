@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { ThumbsUp, Flag, Trash2, Heart } from 'lucide-react';
+import { ThumbsUp, Flag, Trash2, Heart, Bell } from 'lucide-react';
 
 interface CurrentUser {
   id: number;
@@ -20,6 +20,8 @@ export default function Question() {
   const [showReportForm, setShowReportForm] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [commentContent, setCommentContent] = useState('');
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [showNotifications, setShowNotifications] = useState(false);
   const id = parseInt(new URL(window.location.href).pathname.split('/').pop() || '0');
 
   useEffect(() => {
@@ -27,6 +29,13 @@ export default function Question() {
       .then(res => res.json())
       .then(data => setCurrentUser(data));
   }, []);
+
+  useEffect(() => {
+    if (notifications.length > 0) {
+      const unread = notifications.filter((n: any) => !n.isRead).length;
+      setUnreadCount(unread);
+    }
+  }, [notifications]);
 
   const { data: question } = useQuery({
     queryKey: [`/api/questions/${id}`],
@@ -50,6 +59,17 @@ export default function Question() {
       const res = await fetch(`/api/comments/${id}`);
       return res.json();
     }
+  });
+
+  const { data: notifications = [] } = useQuery({
+    queryKey: ['/api/notifications'],
+    queryFn: async () => {
+      const res = await fetch('/api/notifications', { credentials: 'include' });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!currentUser,
+    refetchInterval: 30000
   });
 
   const createAnswerMutation = useMutation({
