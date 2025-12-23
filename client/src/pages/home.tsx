@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { User, Star } from 'lucide-react';
+import { User, Heart } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { processImage } from '../utils/imageProcessor';
 
@@ -299,38 +299,67 @@ export default function Home() {
                   لا توجد أسئلة حالياً. كن أول من يسأل!
                 </Card>
               ) : (
-                questions.map((q: any) => (
-                  <Card key={q.id} className="p-4 hover:shadow-lg transition-shadow cursor-pointer" 
-                        onClick={() => window.location.href = `/question/${q.id}`}
-                        data-testid={`card-question-${q.id}`}>
-                    <div className="flex gap-4 items-start">
-                      {/* Thumbnail Image - Right side */}
-                      {q.imageUrl && (
-                        <div className="flex-shrink-0">
-                          <img 
-                            src={q.imageUrl} 
-                            alt="question thumbnail" 
-                            className="w-16 h-16 rounded-md object-cover border border-gray-200"
-                          />
+                questions.map((q: any) => {
+                  const [isFav, setIsFav] = useState(false);
+                  
+                  return (
+                    <Card key={q.id} className="p-4 hover:shadow-lg transition-shadow" 
+                          data-testid={`card-question-${q.id}`}>
+                      <div className="flex gap-4 items-start cursor-pointer" onClick={() => window.location.href = `/question/${q.id}`}>
+                        {/* Thumbnail Image - Right side */}
+                        {q.imageUrl && (
+                          <div className="flex-shrink-0">
+                            <img 
+                              src={q.imageUrl} 
+                              alt="question thumbnail" 
+                              className="w-16 h-16 rounded-md object-cover border border-gray-200"
+                            />
+                          </div>
+                        )}
+                        
+                        {/* Content - Left side */}
+                        <div className="flex-1">
+                          <div className="flex justify-between items-start mb-2">
+                            <span className="text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
+                              {q.subject}
+                            </span>
+                            <span className="text-xs text-gray-500">{q.grade === '4th' ? 'الرابع' : q.grade === '5th' ? 'الخامس' : 'السادس'}</span>
+                          </div>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-2">{q.content.substring(0, 100)}...</h3>
+                          
+                          {/* Tags Display */}
+                          {q.tags && q.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mb-2">
+                              {q.tags.map((tag: any) => (
+                                <span key={tag.id} className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                                  {tag.name}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          
+                          <p className="text-sm text-gray-500">
+                            بقلم: <button onClick={(e) => { e.stopPropagation(); window.location.href = `/profile?username=${q.username}`; }} className="text-blue-600 hover:underline" data-testid={`button-user-${q.username}`}>{q.username}</button> • {new Date(q.createdAt).toLocaleDateString('ar-SA')}
+                          </p>
                         </div>
-                      )}
-                      
-                      {/* Content - Left side */}
-                      <div className="flex-1">
-                        <div className="flex justify-between items-start mb-2">
-                          <span className="text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
-                            {q.subject}
-                          </span>
-                          <span className="text-xs text-gray-500">{q.grade === '4th' ? 'الرابع' : q.grade === '5th' ? 'الخامس' : 'السادس'}</span>
-                        </div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">{q.content.substring(0, 100)}...</h3>
-                        <p className="text-sm text-gray-500">
-                          بقلم: <button onClick={(e) => { e.stopPropagation(); window.location.href = `/profile?username=${q.username}`; }} className="text-blue-600 hover:underline" data-testid={`button-user-${q.username}`}>{q.username}</button> • {new Date(q.createdAt).toLocaleDateString('ar-SA')}
-                        </p>
+                        
+                        {/* Favorite Button */}
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setIsFav(!isFav);
+                          }}
+                          className={isFav ? "text-red-500" : "text-gray-400"}
+                          data-testid={`button-favorite-${q.id}`}
+                        >
+                          <Heart className={`w-5 h-5 ${isFav ? 'fill-current' : ''}`} />
+                        </Button>
                       </div>
-                    </div>
-                  </Card>
-                ))
+                    </Card>
+                  );
+                })
               )}
             </div>
           </div>

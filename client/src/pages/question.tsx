@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { ThumbsUp, Flag, Trash2 } from 'lucide-react';
+import { ThumbsUp, Flag, Trash2, Heart } from 'lucide-react';
 
 interface CurrentUser {
   id: number;
@@ -18,6 +18,8 @@ export default function Question() {
   const [ratedAnswers, setRatedAnswers] = useState<Set<number>>(new Set());
   const [reportReason, setReportReason] = useState('');
   const [showReportForm, setShowReportForm] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [commentContent, setCommentContent] = useState('');
   const id = parseInt(new URL(window.location.href).pathname.split('/').pop() || '0');
 
   useEffect(() => {
@@ -38,6 +40,14 @@ export default function Question() {
     queryKey: [`/api/questions/${id}/answers`],
     queryFn: async () => {
       const res = await fetch(`/api/questions/${id}/answers`);
+      return res.json();
+    }
+  });
+
+  const { data: comments = [] } = useQuery({
+    queryKey: [`/api/comments/${id}`],
+    queryFn: async () => {
+      const res = await fetch(`/api/comments/${id}`);
       return res.json();
     }
   });
@@ -124,6 +134,23 @@ export default function Question() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/questions/${id}/answers`] });
+    }
+  });
+
+  const addCommentMutation = useMutation({
+    mutationFn: async (content: string) => {
+      const res = await fetch(`/api/comments/${id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ content })
+      });
+      if (!res.ok) throw new Error('Failed to add comment');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/comments/${id}`] });
+      setCommentContent('');
     }
   });
 
@@ -220,6 +247,62 @@ export default function Question() {
               </div>
             </div>
           )}
+
+          {/* Favorites Button */}
+          <div className="mt-4 flex gap-2">
+            <Button
+              onClick={() => setIsFavorite(!isFavorite)}
+              variant="outline"
+              className={isFavorite ? "text-red-500 border-red-500" : ""}
+              size="sm"
+              data-testid="button-favorite-question"
+            >
+              <Heart className={`w-4 h-4 ml-2 ${isFavorite ? 'fill-current' : ''}`} />
+              {isFavorite ? 'أضيف للمفضلة' : 'أضف للمفضلة'}
+            </Button>
+          </div>
+        </Card>
+
+        {/* Comments Section */}
+        <Card className="p-6 mb-8 bg-white shadow-lg">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">التعليقات ({comments.length})</h2>
+          
+          {currentUser && (
+            <div className="mb-6 pb-6 border-b">
+              <Textarea
+                placeholder="أضف تعليقك هنا..."
+                value={commentContent}
+                onChange={(e) => setCommentContent(e.target.value)}
+                className="min-h-20 mb-2"
+                data-testid="textarea-comment"
+              />
+              <Button
+                onClick={() => addCommentMutation.mutate(commentContent)}
+                variant="default"
+                size="sm"
+                disabled={addCommentMutation.isPending || !commentContent}
+                data-testid="button-post-comment"
+              >
+                نشر التعليق
+              </Button>
+            </div>
+          )}
+
+          <div className="space-y-3">
+            {comments.length === 0 ? (
+              <p className="text-gray-500 text-sm">لا توجد تعليقات حالياً</p>
+            ) : (
+              comments.map((c: any) => (
+                <div key={c.id} className="p-3 bg-gray-50 rounded" data-testid={`comment-${c.id}`}>
+                  <div className="flex justify-between items-start mb-1">
+                    <button onClick={() => window.location.href = `/profile?username=${c.username}`} className="font-semibold text-blue-600 hover:underline text-sm">{c.username}</button>
+                    <span className="text-xs text-gray-500">{new Date(c.createdAt).toLocaleDateString('ar-SA')}</span>
+                  </div>
+                  <p className="text-sm text-gray-700">{c.content}</p>
+                </div>
+              ))
+            )}
+          </div>
         </Card>
 
         {/* Answer Form */}
