@@ -6,6 +6,7 @@ import { z } from "zod";
 import { users, type User, type InsertUser } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
+import bcrypt from "bcrypt";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -20,7 +21,8 @@ export async function registerRoutes(
       if (existingUser.length > 0) {
         return res.status(400).json({ message: "اسم المستخدم موجود بالفعل", field: "username" });
       }
-      const [user] = await db.insert(users).values(input).returning();
+      const hashedPassword = await bcrypt.hash(input.password, 10);
+      const [user] = await db.insert(users).values({...input, password: hashedPassword}).returning();
       (req.session as any).userId = user.id;
       res.status(201).json(user);
     } catch (err) {
@@ -39,7 +41,11 @@ export async function registerRoutes(
       const input = api.auth.login.input.parse(req.body);
       const allUsers = await db.select().from(users).where(eq(users.username, input.username));
       const user = allUsers[0];
-      if (!user || user.password !== input.password) {
+      if (!user) {
+        return res.status(401).json({ message: "اسم المستخدم أو كلمة المرور غير صحيحة" });
+      }
+      const passwordMatch = await bcrypt.compare(input.password, user.password);
+      if (!passwordMatch) {
         return res.status(401).json({ message: "اسم المستخدم أو كلمة المرور غير صحيحة" });
       }
       (req.session as any).userId = user.id;
@@ -158,11 +164,25 @@ export async function registerRoutes(
     res.json({ message: "تم تحديث الإشعار" });
   });
 
-  // Questions Routes
+  // Questions Routes with Pagination
   app.get(api.questions.list.path, async (req, res) => {
     const subject = req.query.subject ? String(req.query.subject) : undefined;
+    const page = Math.max(1, parseInt(String(req.query.page || 1), 10));
+    const limit = Math.min(50, parseInt(String(req.query.limit || 10), 10));
     const questions = await storage.getQuestions(subject);
-    res.json(questions);
+    const startIdx = (page - 1) * limit;
+    const endIdx = startIdx + limit;
+    const paginatedQuestions = questions.slice(startIdx, endIdx);
+    res.json({
+      data: paginatedQuestions,
+      pagination: {
+        page,
+        limit,
+        total: questions.length,
+        totalPages: Math.ceil(questions.length / limit),
+        hasMore: endIdx < questions.length
+      }
+    });
   });
 
   app.post(api.questions.create.path, async (req, res) => {
