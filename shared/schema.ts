@@ -73,12 +73,11 @@ export const questionTags = pgTable("question_tags", {
 }));
 
 export const favorites = pgTable("favorites", {
-  id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
   questionId: integer("question_id").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => ({
-  unique: primaryKey({ columns: [table.userId, table.questionId] }),
+  pk: primaryKey({ columns: [table.userId, table.questionId] }),
 }));
 
 export const insertQuestionSchema = createInsertSchema(questions).pick({

@@ -161,5 +161,26 @@ GET /api/questions?subject=X&tags=X&sortBy=newest|popular
 - صور محسّنة بحجم مناسب (64x64 قائمة، 384px تفاصيل)
 - UI سلس ومستجيب
 
+## ربط قاعدة البيانات
+
+### القاعدة المستخدمة حالياً
+- **Replit Postgres** (المدمجة) - موثوقة وآمنة وبدون قيود اتصال
+- **متغير البيئة:** `DATABASE_URL` (يُدار تلقائياً بواسطة Replit)
+
+### الجداول المُنشأة
+✅ جميع جداول التطبيق موجودة:
+- `users` - بيانات المستخدمين
+- `questions` - الأسئلة
+- `answers` - الإجابات
+- `answer_ratings` - تقييمات الإجابات
+- `question_reports` - تقارير الأسئلة
+- `answer_reports` - تقارير الإجابات
+- `tags` - الوسوم
+- `question_tags` - ربط الأسئلة بالوسوم
+- `favorites` - المفضلة
+- `comments` - التعليقات
+- `notifications` - الإشعارات
+- `session` - جلسات المستخدمين
+
 ## تاريخ آخر تحديث
-December 23, 2025 - 6:50 PM
+December 23, 2025 - 7:45 PM
